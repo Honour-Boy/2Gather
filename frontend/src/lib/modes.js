@@ -14,3 +14,13 @@ export const getMode = (id) => MODES.find((m) => m.id === id) || null;
 
 // The verse/template theme for a Mode id, or undefined for "general" (all).
 export const themeForMode = (id) => getMode(id)?.theme || undefined;
+
+// The verse/template themes (the taxonomy the Modes map to). Used by the
+// notification-nudge theme picker in Settings.
+export const VERSE_THEMES = [
+  { id: "journey-and-trust", label: "Journey & Trust" },
+  { id: "courage", label: "Courage" },
+  { id: "rest", label: "Rest" },
+  { id: "gratitude", label: "Gratitude" },
+  { id: "peace", label: "Peace" },
+];

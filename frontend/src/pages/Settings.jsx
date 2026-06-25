@@ -18,6 +18,7 @@ import { supportedLanguages } from "@/components/common/Languages";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 import Avatar from "@/components/ui/Avatar";
 import { enableNotifications } from "@/lib/messaging";
+import { VERSE_THEMES } from "@/lib/modes";
 
 // In-app profile editing (ROADMAP Phase 2). Pre-fills from the signed-in user's
 // `users/{uid}` doc and writes edits back. Username keeps its "@"-prefix +
@@ -43,6 +44,16 @@ const FIELDS = [
 
 // Max stored thumbnail dimension (square) and JPEG quality.
 const AVATAR_DIM = 128;
+
+// Notification preference defaults + hour options for the quiet-hours selects.
+const DEFAULT_PREFS = {
+  newMessages: true,
+  nudges: false,
+  nudgeTheme: "",
+  quietHours: { start: 22, end: 7 },
+};
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const fmtHour = (h) => `${String(h).padStart(2, "0")}:00`;
 
 // Read an image file, center-crop to a square, downscale to AVATAR_DIM, and
 // return a base64 JPEG data URL. Rejects with an i18n key (resolved by the
@@ -93,7 +104,17 @@ const Settings = () => {
     setForm((prev) =>
       prev
         ? prev
-        : FIELDS.reduce((acc, f) => ({ ...acc, [f]: currentUser[f] || "" }), {})
+        : {
+            ...FIELDS.reduce((acc, f) => ({ ...acc, [f]: currentUser[f] || "" }), {}),
+            notificationPrefs: {
+              ...DEFAULT_PREFS,
+              ...(currentUser.notificationPrefs || {}),
+              quietHours: {
+                ...DEFAULT_PREFS.quietHours,
+                ...((currentUser.notificationPrefs || {}).quietHours || {}),
+              },
+            },
+          }
     );
   }, [currentUser]);
 
@@ -142,6 +163,20 @@ const Settings = () => {
     }
   };
 
+  const setPref = (key, val) =>
+    setForm((f) => ({
+      ...f,
+      notificationPrefs: { ...f.notificationPrefs, [key]: val },
+    }));
+  const setQuiet = (key, val) =>
+    setForm((f) => ({
+      ...f,
+      notificationPrefs: {
+        ...f.notificationPrefs,
+        quietHours: { ...f.notificationPrefs.quietHours, [key]: val },
+      },
+    }));
+
   const validate = () => {
     const e = {};
     if (!form.fullName.trim()) e.fullName = t("settings.nameRequired");
@@ -177,6 +212,7 @@ const Settings = () => {
         (acc, f) => ({ ...acc, [f]: f === "username" ? username : form[f] }),
         {}
       );
+      patch.notificationPrefs = form.notificationPrefs;
       await updateDoc(doc(db, "users", currentUser.id), patch);
 
       // Refresh the store so the rest of the app reflects the edits immediately.
@@ -336,6 +372,68 @@ const Settings = () => {
               ? t("settings.notifEnabling", "Enabling…")
               : t("settings.notifEnable", "Enable push on this device")}
           </button>
+
+          <div className="space-y-3 pt-1">
+            <PrefToggle
+              label={t("settings.notifNewPrayers", "New prayer messages")}
+              checked={form.notificationPrefs.newMessages !== false}
+              onChange={(v) => setPref("newMessages", v)}
+            />
+            <PrefToggle
+              label={t("settings.notifDailyNudge", "Daily verse nudge")}
+              checked={!!form.notificationPrefs.nudges}
+              onChange={(v) => setPref("nudges", v)}
+            />
+            {form.notificationPrefs.nudges && (
+              <div className="space-y-4 pt-1">
+                <Field label={t("settings.notifNudgeTheme", "Nudge theme")}>
+                  <select
+                    value={form.notificationPrefs.nudgeTheme || ""}
+                    onChange={(e) => setPref("nudgeTheme", e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">{t("settings.notifAnyTheme", "Any (general)")}</option>
+                    {VERSE_THEMES.map((th) => (
+                      <option key={th.id} value={th.id}>
+                        {th.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label={t("settings.notifQuietStart", "Quiet hours start")}>
+                    <select
+                      value={form.notificationPrefs.quietHours.start}
+                      onChange={(e) => setQuiet("start", Number(e.target.value))}
+                      className={inputCls}
+                    >
+                      {HOURS.map((h) => (
+                        <option key={h} value={h}>
+                          {fmtHour(h)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t("settings.notifQuietEnd", "Quiet hours end")}>
+                    <select
+                      value={form.notificationPrefs.quietHours.end}
+                      onChange={(e) => setQuiet("end", Number(e.target.value))}
+                      className={inputCls}
+                    >
+                      {HOURS.map((h) => (
+                        <option key={h} value={h}>
+                          {fmtHour(h)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <p className="text-xs text-uni-muted">
+                  {t("settings.notifQuietHint", "No nudges between these hours. Preferences save with your profile.")}
+                </p>
+              </div>
+            )}
+          </div>
         </Section>
 
         {/* Actions */}
@@ -362,6 +460,28 @@ const Settings = () => {
     </div>
   );
 };
+
+const PrefToggle = ({ label, checked, onChange }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    aria-pressed={checked}
+    className="w-full flex items-center justify-between gap-3 text-left"
+  >
+    <span className="text-sm text-white">{label}</span>
+    <span
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+        checked ? "bg-brand" : "bg-uni-border"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0.5"
+        }`}
+      />
+    </span>
+  </button>
+);
 
 const Section = ({ title, children }) => (
   <section className="space-y-4">
