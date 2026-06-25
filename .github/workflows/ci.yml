@@ -1,0 +1,36 @@
+name: CI
+
+# Runs the full test suite (backend + frontend) on every PR and on pushes to the
+# long-lived branches. This is the gate that protects `main` before a deploy.
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The Jest harness (jest, babel presets, testing-library, jsdom) lives at the
+      # repo root; React/Express source deps live under each package. Install all three.
+      - name: Install root deps (test harness)
+        run: npm install
+      - name: Install frontend deps
+        run: npm install --prefix frontend
+      - name: Install backend deps
+        run: npm install --prefix backend
+
+      - name: Run tests (backend + frontend)
+        run: npm test
+
+      # Lint is reported but does not block the pipeline (the codebase predates a clean
+      # lint gate). Tighten to a hard failure once warnings are cleared.
+      - name: Lint frontend
+        run: npm run lint --prefix frontend
+        continue-on-error: true

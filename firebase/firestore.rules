@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// UniComm Firestore security rules.
+//
+// Baseline (P0): everything requires authentication, users can only write their
+// own profile, and chat documents are participant-scoped (only the two users in
+// a chat can read or append to it). This replaces locked mode (which denies
+// everything and makes the app appear dead) and test mode (which is wide open
+// and expires).
+//
+// `userchats` is now maintained entirely server-side by the Express backend
+// (backend/userchats.js, POST /api/userchats/sync) — the client never writes it,
+// so the cross-user write hole is closed: client writes are denied and the Admin
+// SDK (which bypasses rules) is the only writer.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isChatParticipant(chatId) {
+      return isSignedIn() &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+    }
+
+    // User profiles: readable by any signed-in user (needed for search,
+    // suggestions, and showing a chat partner's name/language). Writable only
+    // by the owner. No deletes from the client.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // Per-user chat index. Owner-read only. ALL client writes are denied — the
+    // index is maintained exclusively by the Express backend via the Admin SDK
+    // (which bypasses these rules). This is what closes the old cross-user write
+    // hole. The live preview data lives in the `items` subcollection below.
+    match /userchats/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if false;
+
+      // One doc per conversation: userchats/{userId}/items/{chatId}. Same policy
+      // — owner reads, only the backend writes.
+      match /items/{chatId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if false;
+      }
+    }
+
+    // Chat documents (participant list + metadata; messages live in the
+    // `messages` subcollection below). Participant-scoped: only the users listed
+    // in participantIds may read or write. The participant list itself is fixed
+    // at creation and cannot be changed by an update.
+    match /chats/{chatId} {
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds;
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds
+        && request.resource.data.participantIds == resource.data.participantIds;
+      allow delete: if false;
+
+      // Messages subcollection. Scoped to the parent chat's participants.
+      // The sender writes the original text first (persist-first), then patches
+      // `translatedText` once best-effort translation resolves — so updates are
+      // allowed for the sender, but content/metadata is immutable: only
+      // `translatedText` can change (senderId, text, createdAt are pinned).
+      match /messages/{messageId} {
+        allow read: if isChatParticipant(chatId);
+        allow create: if isChatParticipant(chatId)
+          && request.resource.data.senderId == request.auth.uid;
+        allow update: if isChatParticipant(chatId)
+          && resource.data.senderId == request.auth.uid
+          && request.resource.data.senderId == resource.data.senderId
+          && request.resource.data.text == resource.data.text
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+name: Deploy
+
+# Deploys on merge/push to main:
+#   - Frontend  -> Firebase Hosting
+#   - Backend   -> Render (triggered via deploy hook; Render also auto-deploys on push)
+# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions):
+#   VITE_API_KEY               Firebase web API key (baked into the frontend build)
+#   VITE_API_URL               Backend base URL, e.g. https://unicomm-backend.onrender.com
+#   FIREBASE_SERVICE_ACCOUNT   Service-account JSON (used by the hosting deploy action)
+#   RENDER_DEPLOY_HOOK_URL     (optional) Render deploy hook URL for the backend service
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend deps
+        run: npm install --prefix frontend
+
+      - name: Build frontend
+        run: npm run build --prefix frontend
+        env:
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: unicomm-2d7bc
+          channelId: live
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            echo "Triggering Render deploy…"
+            curl -fsSL -X POST "$HOOK"
+          else
+            echo "RENDER_DEPLOY_HOOK_URL not set — relying on Render's auto-deploy on push."
+          fi

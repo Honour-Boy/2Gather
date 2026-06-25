@@ -1,0 +1,21 @@
+# Render Blueprint for the UniComm Express backend.
+# Import once via Render dashboard → New → Blueprint → pick this repo.
+# After that, pushes to `main` auto-deploy (autoDeploy: true).
+# Secret values (sync: false) must be set in the Render dashboard — see DEPLOYMENT.md.
+services:
+  - type: web
+    name: unicomm-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Comma-separated allowed origins (the deployed Firebase Hosting URL + any others).
+      - key: CORS_ORIGIN
+        sync: false
+      # Entire Firebase service-account JSON as a single-line string.
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false

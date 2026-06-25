@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# env files — never commit real values (examples are kept)
+.env
+.env.*
+!.env.example
+
+# Firebase Admin service-account credentials — NEVER commit
+backend/config/unicomm.json
+**/*firebase-adminsdk*.json
+**/serviceAccount*.json
+
+# Claude Code tooling + personal engineering kit — local only, never commit
+.claude/
+.mcp.json
+CLAUDE.md
+ENGINEERING_BIBLE.md
+handoff.md
+ROADMAP.md
+DEPLOYMENT.md
+docs/
+
+# Source planning documents — local only
+*.docx
+
+# Python bytecode (e.g. from skill scripts)
+__pycache__/
+*.pyc
+
+# build output
+dist
+build
+
+# logs / OS cruft
+*.log
+.DS_Store
+Thumbs.db
