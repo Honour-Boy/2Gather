@@ -19,6 +19,7 @@ import MessageBubble from "@/components/chat/MessageBubble";
 import { SendIcon, EmojiIcon, Arrow } from "@/components/ui/icons";
 import Avatar from "@/components/ui/Avatar";
 import PrayerTemplates from "@/components/chat/PrayerTemplates";
+import VersePicker from "@/components/chat/VersePicker";
 
 // How many messages to load initially and per "load older" click.
 const PAGE_SIZE = 25;
@@ -31,6 +32,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   const [liveCurrentUser, setLiveCurrentUser] = useState(null);
   const [text, setText] = useState("");
   const [sendError, setSendError] = useState(null);
+  const [sendErrorKind, setSendErrorKind] = useState(null);
+  // Tracks when the composer was filled from a prayer template / verse picker,
+  // so the sent message is tagged kind: "prayer" (styled in MessageBubble).
+  const [pendingKind, setPendingKind] = useState(null);
   const [openEmoji, setOpenEmoji] = useState(false);
   const [expandedOriginals, setExpandedOriginals] = useState({});
 
@@ -143,7 +148,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   // subcollection snapshot, so we don't block the UI on the network. Translation
   // patches in afterward (best-effort). Only a genuine persist failure surfaces
   // (the retry affordance below).
-  const doSend = async (messageText) => {
+  const doSend = async (messageText, kind) => {
     if (!messageText || !chatId) return;
     setSendError(null);
     try {
@@ -154,22 +159,26 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         text: messageText,
         sourceLang: currentUserLang?.value || "en",
         targetLang: userLang?.value || "en",
+        kind,
       });
     } catch (err) {
       console.log(err);
       setSendError(messageText);
+      setSendErrorKind(kind || null);
     }
   };
 
   const handleSend = () => {
     const t = text.trim();
     if (!t) return;
+    const kind = pendingKind;
     setText(""); // clear immediately for a real-time feel
-    doSend(t);
+    setPendingKind(null);
+    doSend(t, kind);
   };
 
   const handleRetry = () => {
-    if (sendError) doSend(sendError);
+    if (sendError) doSend(sendError, sendErrorKind);
   };
 
   const handleEmoji = (e) => {
@@ -333,7 +342,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 disabled ? t("chat.cannotSend") : t("chat.messagePlaceholder")
               }
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (e.target.value === "") setPendingKind(null);
+              }}
               disabled={disabled}
               className="flex-1 bg-transparent border-none outline-none text-sm md:text-[15px] text-white placeholder:text-uni-muted disabled:opacity-50"
               onKeyDown={(e) => {
@@ -344,12 +356,22 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               }}
             />
 
+            {/* Share a real Bible verse — prefills the composer (attributed). */}
+            <VersePicker
+              onPick={(snippet) => {
+                setText((prev) => (prev.trim() ? `${prev.trim()} ${snippet}` : snippet));
+                setPendingKind("prayer");
+              }}
+              disabled={disabled}
+            />
+
             {/* Prayer templates — prefill the composer with an editable starter
                 prayer. Available on all screen sizes. */}
             <PrayerTemplates
-              onPick={(body) =>
-                setText((prev) => (prev.trim() ? `${prev.trim()} ${body}` : body))
-              }
+              onPick={(body) => {
+                setText((prev) => (prev.trim() ? `${prev.trim()} ${body}` : body));
+                setPendingKind("prayer");
+              }}
               disabled={disabled}
             />
 

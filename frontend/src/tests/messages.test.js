@@ -92,3 +92,19 @@ test("does not throw and keeps the message when translation fails", async () => 
     expect.objectContaining({ translatedText: expect.anything() })
   );
 });
+
+test("persists a `kind` field when provided (e.g. prayer)", async () => {
+  axios.post.mockResolvedValue({ status: 200, data: { translatedText: "bonjour" } });
+
+  await sendChatMessage({ ...baseArgs, kind: "prayer" });
+
+  expect(addDoc.mock.calls[0][1].kind).toBe("prayer");
+});
+
+test("omits `kind` for ordinary messages", async () => {
+  axios.post.mockResolvedValue({ status: 200, data: { translatedText: "bonjour" } });
+
+  await sendChatMessage(baseArgs);
+
+  expect(addDoc.mock.calls[0][1]).not.toHaveProperty("kind");
+});
