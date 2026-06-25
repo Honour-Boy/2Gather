@@ -54,6 +54,19 @@ if (require.main === module) {
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
   });
+
+  // Engagement nudges (Phase 5): off by default. Set ENABLE_NUDGES=1 to run an
+  // hourly check that sends each opted-in user a daily verse (runNudges enforces
+  // quiet hours + a ~daily cap). Requires Firebase Admin credentials + FCM.
+  if (process.env.ENABLE_NUDGES === "1") {
+    const { runNudges } = require("./nudges");
+    const admin = require("./config/firebaseAdmins");
+    setInterval(
+      () => runNudges(admin).catch((e) => console.warn("nudges:", e && e.message)),
+      60 * 60 * 1000
+    );
+    console.log("Nudge scheduler enabled (hourly).");
+  }
 }
 
 module.exports = { app, parseAllowedOrigins };
