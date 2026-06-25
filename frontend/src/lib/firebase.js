@@ -28,5 +28,5 @@ const googleProvider = new GoogleAuthProvider();
 
 console.log('Firebase initialized successfully.');
 
-// Export auth and db
-export { auth, db, googleProvider, storage };
+// Export the app (needed by FCM messaging) along with the services.
+export { app, auth, db, googleProvider, storage };
