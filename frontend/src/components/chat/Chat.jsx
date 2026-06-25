@@ -18,6 +18,7 @@ import { sendChatMessage } from "@/services/messages";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { SendIcon, EmojiIcon, Arrow } from "@/components/ui/icons";
 import Avatar from "@/components/ui/Avatar";
+import PrayerTemplates from "@/components/chat/PrayerTemplates";
 
 // How many messages to load initially and per "load older" click.
 const PAGE_SIZE = 25;
@@ -341,6 +342,15 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                   handleSend();
                 }
               }}
+            />
+
+            {/* Prayer templates — prefill the composer with an editable starter
+                prayer. Available on all screen sizes. */}
+            <PrayerTemplates
+              onPick={(body) =>
+                setText((prev) => (prev.trim() ? `${prev.trim()} ${body}` : body))
+              }
+              disabled={disabled}
             />
 
             {/* Emoji picker is desktop-only — phones have a native keyboard
