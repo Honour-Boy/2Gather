@@ -33,6 +33,12 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && request.auth.uid == userId;
       allow delete: if false;
+
+      // Private per-user journal (Phase 4): reflections/prayers/gratitude tagged
+      // by Mode. Owner-only — no one else can read or write another's journal.
+      match /journal/{entryId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Per-user chat index. Owner-read only. ALL client writes are denied — the
