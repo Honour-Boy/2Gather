@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
@@ -36,6 +37,12 @@ const EmptyChatState = () => {
       </p>
       <ModeSwitcher className="mt-6 max-w-md" />
       <VerseOfTheDay theme={theme} className="mt-5 w-full max-w-sm" />
+      <Link
+        to="/journal"
+        className="mt-5 text-xs font-medium text-uni-muted hover:text-uni-lime transition-colors"
+      >
+        Open your journal →
+      </Link>
     </div>
   );
 };
