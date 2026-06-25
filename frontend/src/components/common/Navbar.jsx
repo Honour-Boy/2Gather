@@ -44,6 +44,22 @@ const Navbar = () => {
             <circle cx="12" cy="7" r="4" />
           </svg>
         </NavIcon>
+
+        <NavIcon label={t("navbar.journal", "Journal")} onClick={() => navigate("/journal")}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </NavIcon>
       </div>
       <div className="flex flex-col items-center">
         <LogoutNow />
