@@ -4,9 +4,14 @@ import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
 import Navbar from "@/components/common/Navbar";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
+import ModeSwitcher from "@/components/modes/ModeSwitcher";
+import useModeStore from "@/store/modeStore";
+import { themeForMode } from "@/lib/modes";
 
 const EmptyChatState = () => {
   const { t } = useTranslation();
+  const { activeMode } = useModeStore();
+  const theme = themeForMode(activeMode);
   return (
     <div className="flex flex-col items-center justify-center h-full w-full text-center px-6">
       <div className="w-20 h-20 rounded-3xl bg-brand-soft border border-uni-lime/20 flex items-center justify-center mb-5">
@@ -29,7 +34,8 @@ const EmptyChatState = () => {
       <p className="text-sm text-uni-muted mt-2 max-w-sm">
         {t("chatRoom.selectBody")}
       </p>
-      <VerseOfTheDay className="mt-8 w-full max-w-sm" />
+      <ModeSwitcher className="mt-6 max-w-md" />
+      <VerseOfTheDay theme={theme} className="mt-5 w-full max-w-sm" />
     </div>
   );
 };
