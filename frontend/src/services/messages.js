@@ -30,6 +30,7 @@ export async function sendChatMessage({
   text,
   sourceLang,
   targetLang,
+  kind,
 }) {
   const src = sourceLang || "en";
   const tgt = targetLang || "en";
@@ -42,6 +43,9 @@ export async function sendChatMessage({
     translatedText: text,
     sourceLang: src,
     targetLang: tgt,
+    // Optional message kind (e.g. "prayer" for template/verse-composed messages).
+    // Only written when set, so ordinary messages stay unchanged.
+    ...(kind ? { kind } : {}),
     createdAt: new Date(),
   });
 

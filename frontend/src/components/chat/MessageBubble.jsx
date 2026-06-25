@@ -28,12 +28,18 @@ const MessageBubble = ({
           isMine ? "items-end" : "items-start"
         }`}
       >
+        {message.kind === "prayer" && (
+          <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-uni-lime">
+            <span className="w-1.5 h-1.5 rounded-full bg-uni-lime" />
+            {t("chat.prayer", "Prayer")}
+          </span>
+        )}
         <div
           className={`px-4 py-2.5 rounded-2xl text-sm md:text-[15px] leading-relaxed break-words ${
             isMine
               ? "bg-bubble-sent text-uni-on-accent font-medium shadow-bubble rounded-br-md"
               : "bg-uni-surface text-uni-text rounded-bl-md border border-uni-border"
-          }`}
+          }${message.kind === "prayer" ? " ring-1 ring-uni-lime/30" : ""}`}
         >
           {/* translate="no" keeps a browser's page-translation (e.g. a French
               UI) from re-translating message content — so toggling to the
