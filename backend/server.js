@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { userchatsSyncHandler } = require("./userchats");
+const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./verses");
 
 dotenv.config();
 
@@ -35,6 +36,13 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 // verify the caller's Firebase ID token, confirm they're a participant, and
 // re-derive both users' previews from Firestore. See userchats.js.
 app.post("/api/userchats/sync", userchatsSyncHandler);
+
+// Bible verse engine (Phase 3): curated, attributed verses by theme, a
+// deterministic verse-of-the-day, and search. Static + public + cacheable;
+// no auth or Firebase needed. See verses.js.
+app.get("/api/verses", versesHandler);
+app.get("/api/verses/daily", dailyVerseHandler);
+app.get("/api/verses/search", searchVersesHandler);
 
 // Start the server only when run directly (not when imported by tests).
 if (require.main === module) {

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
 import Navbar from "@/components/common/Navbar";
+import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 
 const EmptyChatState = () => {
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ const EmptyChatState = () => {
       <p className="text-sm text-uni-muted mt-2 max-w-sm">
         {t("chatRoom.selectBody")}
       </p>
+      <VerseOfTheDay className="mt-8 w-full max-w-sm" />
     </div>
   );
 };
