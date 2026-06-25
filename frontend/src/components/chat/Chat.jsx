@@ -20,6 +20,8 @@ import { SendIcon, EmojiIcon, Arrow } from "@/components/ui/icons";
 import Avatar from "@/components/ui/Avatar";
 import PrayerTemplates from "@/components/chat/PrayerTemplates";
 import VersePicker from "@/components/chat/VersePicker";
+import useModeStore from "@/store/modeStore";
+import { themeForMode } from "@/lib/modes";
 
 // How many messages to load initially and per "load older" click.
 const PAGE_SIZE = 25;
@@ -43,6 +45,8 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, resetChat } =
     useChatStore();
   const { t } = useTranslation();
+  const { activeMode } = useModeStore();
+  const modeTheme = themeForMode(activeMode);
   const endRef = useRef(null);
   const lastMsgIdRef = useRef(null);
 
@@ -363,6 +367,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 setPendingKind("prayer");
               }}
               disabled={disabled}
+              theme={modeTheme}
             />
 
             {/* Prayer templates — prefill the composer with an editable starter
@@ -373,6 +378,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 setPendingKind("prayer");
               }}
               disabled={disabled}
+              theme={modeTheme}
             />
 
             {/* Emoji picker is desktop-only — phones have a native keyboard

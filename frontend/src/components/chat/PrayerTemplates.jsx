@@ -4,21 +4,27 @@ import { fetchPrayerTemplates } from "@/lib/prayerTemplates";
 // A composer button that opens a popover of curated prayer templates. Picking
 // one calls onPick(body) so the chat composer can prefill an editable prayer.
 // Mirrors the emoji-picker pattern in Chat.jsx. Loads lazily on first open.
-export default function PrayerTemplates({ onPick, disabled }) {
+export default function PrayerTemplates({ onPick, disabled, theme }) {
   const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
 
+  // (Re)load when the popover opens or the active Mode's theme changes.
   useEffect(() => {
-    if (!open || status === "ready" || status === "loading") return;
+    if (!open) return;
+    let active = true;
     setStatus("loading");
-    fetchPrayerTemplates()
+    fetchPrayerTemplates({ theme })
       .then((list) => {
+        if (!active) return;
         setTemplates(list);
         setStatus("ready");
       })
-      .catch(() => setStatus("error"));
-  }, [open, status]);
+      .catch(() => active && setStatus("error"));
+    return () => {
+      active = false;
+    };
+  }, [open, theme]);
 
   const pick = (body) => {
     onPick?.(body);

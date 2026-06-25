@@ -4,21 +4,27 @@ import { fetchVerses } from "@/lib/verses";
 // A composer button that opens a popover of Bible verses. Picking one prefills
 // the composer with the verse quoted + attributed, so the user can share it
 // (with a note) in a prayer chat. Mirrors PrayerTemplates / the emoji picker.
-export default function VersePicker({ onPick, disabled }) {
+export default function VersePicker({ onPick, disabled, theme }) {
   const [open, setOpen] = useState(false);
   const [verses, setVerses] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
 
+  // (Re)load when the popover opens or the active Mode's theme changes.
   useEffect(() => {
-    if (!open || status === "ready" || status === "loading") return;
+    if (!open) return;
+    let active = true;
     setStatus("loading");
-    fetchVerses()
+    fetchVerses({ theme })
       .then((list) => {
+        if (!active) return;
         setVerses(list);
         setStatus("ready");
       })
-      .catch(() => setStatus("error"));
-  }, [open, status]);
+      .catch(() => active && setStatus("error"));
+    return () => {
+      active = false;
+    };
+  }, [open, theme]);
 
   const pick = (v) => {
     onPick?.(`“${v.text}” — ${v.reference} (WEB)`);
