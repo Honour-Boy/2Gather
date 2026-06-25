@@ -17,6 +17,7 @@ import { UI_LANGUAGES, setUiLanguage } from "@/lib/i18n";
 import { supportedLanguages } from "@/components/common/Languages";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 import Avatar from "@/components/ui/Avatar";
+import { enableNotifications } from "@/lib/messaging";
 
 // In-app profile editing (ROADMAP Phase 2). Pre-fills from the signed-in user's
 // `users/{uid}` doc and writes edits back. Username keeps its "@"-prefix +
@@ -84,6 +85,7 @@ const Settings = () => {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [notifBusy, setNotifBusy] = useState(false);
 
   // Seed the form from the store once it's available (only once).
   useEffect(() => {
@@ -123,6 +125,22 @@ const Settings = () => {
   };
 
   const removeAvatar = () => setForm((f) => ({ ...f, avatarUrl: "" }));
+
+  // Enable FCM push on this device (Phase 5). Best-effort; surfaces a clear
+  // message for each failure (unsupported / denied / not yet configured).
+  const enablePush = async () => {
+    if (notifBusy) return;
+    setNotifBusy(true);
+    try {
+      await enableNotifications(currentUser.id);
+      await fetchUserInfo(currentUser.id);
+      notify.success(t("settings.notifEnabled", "Notifications enabled on this device."));
+    } catch (err) {
+      notify.error(err.message || t("settings.notifFailed", "Couldn't enable notifications."));
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   const validate = () => {
     const e = {};
@@ -298,6 +316,26 @@ const Settings = () => {
               <input type="text" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} placeholder={t("settings.jobPlaceholder")} />
             </Field>
           </div>
+        </Section>
+
+        {/* Notifications */}
+        <Section title={t("settings.notifications", "Notifications")}>
+          <p className="text-sm text-uni-muted">
+            {t(
+              "settings.notifBlurb",
+              "Get a push when someone sends you a prayer. Enable it on each device you use."
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={enablePush}
+            disabled={notifBusy}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-uni-surface border border-uni-border text-white hover:border-uni-lime/50 disabled:opacity-50 transition-colors"
+          >
+            {notifBusy
+              ? t("settings.notifEnabling", "Enabling…")
+              : t("settings.notifEnable", "Enable push on this device")}
+          </button>
         </Section>
 
         {/* Actions */}
