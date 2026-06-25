@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { userchatsSyncHandler } = require("./userchats");
 const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./verses");
+const { templatesHandler } = require("./prayerTemplates");
 
 dotenv.config();
 
@@ -43,6 +44,10 @@ app.post("/api/userchats/sync", userchatsSyncHandler);
 app.get("/api/verses", versesHandler);
 app.get("/api/verses/daily", dailyVerseHandler);
 app.get("/api/verses/search", searchVersesHandler);
+
+// Prayer-template library (Phase 2): curated editable starter prayers by theme.
+// Static + public + cacheable. See prayerTemplates.js.
+app.get("/api/prayer-templates", templatesHandler);
 
 // Start the server only when run directly (not when imported by tests).
 if (require.main === module) {
