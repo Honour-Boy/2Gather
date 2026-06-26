@@ -11,7 +11,7 @@
 // Idempotent: a chat whose subcollection already has documents is skipped, so
 // re-running is safe. The Admin SDK bypasses Firestore rules, so this works
 // regardless of whether the new rules are deployed. Creds resolve via
-// ../config/firebaseAdmins.js (locally: backend/config/unicomm.json).
+// ../config/firebaseAdmins.js (locally: backend/config/serviceAccount.json).
 //
 // Usage (from the backend/ folder):
 //   node scripts/migrateMessagesToSubcollection.js            # DRY RUN

@@ -11,7 +11,7 @@ const admin = require('firebase-admin');
 //   1. FIREBASE_SERVICE_ACCOUNT       — the full service-account JSON as a string
 //                                        (set as a secret on Render / GitHub Actions).
 //   2. GOOGLE_APPLICATION_CREDENTIALS  — path to a JSON file (Google ADC standard).
-//   3. backend/config/unicomm.json     — local fallback (gitignored; see .gitignore).
+//   3. backend/config/serviceAccount.json     — local fallback (gitignored; see .gitignore).
 // See DEPLOYMENT.md for how to obtain and set the credential.
 function resolveCredential() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {

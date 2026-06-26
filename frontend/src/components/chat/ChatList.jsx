@@ -218,7 +218,7 @@ const ChatList = () => {
             type="text"
             placeholder={t("chatList.searchPlaceholder")}
             aria-label={t("chatList.searchPlaceholder")}
-            className="bg-transparent border-none outline-none text-sm text-white placeholder:text-uni-muted w-full flex-1"
+            className="bg-transparent border-none outline-none text-sm text-uni-text placeholder:text-uni-muted w-full flex-1"
             onChange={(e) => {
               setInput(e.target.value);
               if (error) setError("");
@@ -237,7 +237,7 @@ const ChatList = () => {
       )}
       {user && (
         <div className="mt-3 flex items-center justify-between gap-3 bg-uni-surface border border-uni-border p-3 rounded-xl w-full">
-          <span className="text-white text-sm">{user.username}</span>
+          <span className="text-uni-text text-sm">{user.username}</span>
           <button
             type="button"
             onClick={() => handleAdd(user)}
@@ -261,7 +261,7 @@ const ChatList = () => {
                   onClick={() => handleAdd(suggestion)}
                   className="flex items-center gap-2 bg-uni-surface border border-uni-border hover:border-uni-lime/40 px-3 py-2 rounded-full transition-colors"
                 >
-                  <span className="text-white text-xs">
+                  <span className="text-uni-text text-xs">
                     {suggestion.username}
                   </span>
                   <img src={plusIcon} alt="" className="w-4 h-4 opacity-80" />
@@ -308,7 +308,7 @@ const ChatList = () => {
             <Avatar user={chat.user} small className="text-sm" />
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               <div className="flex justify-between items-center gap-2">
-                <span className="font-medium text-left text-white text-sm truncate">
+                <span className="font-medium text-left text-uni-text text-sm truncate">
                   {chat.user?.username}
                 </span>
                 <span className="text-[10px] text-uni-muted shrink-0">

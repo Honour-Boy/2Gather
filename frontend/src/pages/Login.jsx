@@ -119,7 +119,7 @@ function Login() {
             <button
               type="button"
               onClick={togglePassword}
-              className="absolute inset-y-0 right-3 flex items-center text-uni-muted hover:text-white"
+              className="absolute inset-y-0 right-3 flex items-center text-uni-muted hover:text-uni-text"
               aria-label={t("login.password")}
             >
               <img src={passwordShow.img} className="w-4" alt="" />

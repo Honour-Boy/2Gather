@@ -5,7 +5,7 @@
   max-height: 100vh;
   overflow: hidden;
   max-width: 100vw;
-  color: #eceef3;
+  color: #2a2722;
 }
 
 .chat-container {
@@ -14,32 +14,32 @@
   height: 100vh;
   flex: 1;
   min-width: 0;
-  background-color: #0a0b0f;
+  background-color: #fbf6ec;
 }
 
-/* Avatars: brand lime→cyan gradient with near-black initials for contrast. */
+/* Avatars: brand gold→amber gradient with warm-dark initials for contrast. */
 .user-avatar {
-  background: linear-gradient(135deg, #c6ff3d 0%, #2de2ff 100%);
+  background: linear-gradient(135deg, #ebb755 0%, #d98e33 100%);
   border-radius: 9999px;
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0a0b0f;
+  color: #2a2722;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .user-avatar-small {
-  background: linear-gradient(135deg, #c6ff3d 0%, #2de2ff 100%);
+  background: linear-gradient(135deg, #ebb755 0%, #d98e33 100%);
   border-radius: 9999px;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0a0b0f;
+  color: #2a2722;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -47,7 +47,7 @@
 .divider {
   width: 1px;
   align-self: stretch;
-  background: #2a2e3a;
+  background: #e8dcc4;
 }
 
 .chatlist::-webkit-scrollbar {

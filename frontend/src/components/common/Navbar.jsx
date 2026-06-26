@@ -81,13 +81,13 @@ const NavIcon = ({ children, label, active, onClick }) => {
         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
           active
             ? "bg-brand-soft text-uni-lime"
-            : "text-uni-muted hover:text-white hover:bg-white/5"
+            : "text-uni-muted hover:text-uni-text hover:bg-black/5"
         }`}
       >
         {children}
       </button>
       {hovered && (
-        <span className="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-white rounded-md whitespace-nowrap border border-uni-border shadow-lg z-30">
+        <span className="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-uni-text rounded-md whitespace-nowrap border border-uni-border shadow-lg z-30">
           {label}
         </span>
       )}

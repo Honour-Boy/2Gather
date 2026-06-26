@@ -86,7 +86,7 @@ const fileToAvatarDataUrl = (file) =>
   });
 
 const inputCls =
-  "w-full bg-uni-surface border border-uni-border rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all";
+  "w-full bg-uni-surface border border-uni-border rounded-xl px-3 py-2.5 text-sm text-uni-text outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -240,7 +240,7 @@ const Settings = () => {
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-uni-border bg-uni-bg/90 backdrop-blur">
         <button
           onClick={() => navigate("/chat")}
-          className="p-2 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
+          className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           aria-label={t("settings.backToChat")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -248,7 +248,7 @@ const Settings = () => {
             <path d="m12 19-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-base md:text-lg font-semibold text-white">{t("settings.editProfile")}</h1>
+        <h1 className="text-base md:text-lg font-semibold text-uni-text">{t("settings.editProfile")}</h1>
       </div>
 
       <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-8">
@@ -278,7 +278,7 @@ const Settings = () => {
             </label>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate">
+            <p className="text-sm font-semibold text-uni-text truncate">
               {form.fullName || t("settings.yourName")}
             </p>
             <p className="text-xs text-uni-muted truncate">{currentUser.email}</p>
@@ -366,7 +366,7 @@ const Settings = () => {
             type="button"
             onClick={enablePush}
             disabled={notifBusy}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-uni-surface border border-uni-border text-white hover:border-uni-lime/50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-uni-surface border border-uni-border text-uni-text hover:border-uni-lime/50 disabled:opacity-50 transition-colors"
           >
             {notifBusy
               ? t("settings.notifEnabling", "Enabling…")
@@ -441,7 +441,7 @@ const Settings = () => {
           <button
             type="button"
             onClick={() => navigate("/chat")}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           >
             {t("settings.cancel")}
           </button>
@@ -456,7 +456,7 @@ const Settings = () => {
       </form>
 
       {/* Make the native date picker indicator visible on the dark theme. */}
-      <style>{`.calendar-icon-white::-webkit-calendar-picker-indicator { filter: invert(1); }`}</style>
+      <style>{`.calendar-icon-white::-webkit-calendar-picker-indicator { filter: none; }`}</style>
     </div>
   );
 };
@@ -468,7 +468,7 @@ const PrefToggle = ({ label, checked, onChange }) => (
     aria-pressed={checked}
     className="w-full flex items-center justify-between gap-3 text-left"
   >
-    <span className="text-sm text-white">{label}</span>
+    <span className="text-sm text-uni-text">{label}</span>
     <span
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
         checked ? "bg-brand" : "bg-uni-border"
@@ -494,7 +494,7 @@ const Section = ({ title, children }) => (
 
 const Field = ({ label, hint, error, children }) => (
   <div>
-    <label className="block text-sm font-medium text-white mb-1.5">{label}</label>
+    <label className="block text-sm font-medium text-uni-text mb-1.5">{label}</label>
     {children}
     {error ? (
       <p className="mt-1 text-xs text-red-400">{error}</p>

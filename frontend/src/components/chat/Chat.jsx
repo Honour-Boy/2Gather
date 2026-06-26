@@ -203,7 +203,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             is open). Clears the selected chat via the store. */}
         <button
           onClick={resetChat}
-          className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors shrink-0"
+          className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors shrink-0"
           aria-label={t("chat.backToList")}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -219,7 +219,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         >
           <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-uni-muted uppercase">
             <span className="w-2 h-2 rounded-full bg-brand" />
-            Unicomm
+            2Gather
           </span>
           <span className="hidden sm:block w-px h-5 bg-uni-border" />
           <Avatar
@@ -228,7 +228,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             fallback="?"
           />
           <div className="flex flex-col leading-tight min-w-0">
-            <span className="text-sm md:text-base font-semibold text-white truncate">
+            <span className="text-sm md:text-base font-semibold text-uni-text truncate">
               {user?.fullName || t("chat.selectChat")}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-uni-muted">
@@ -243,7 +243,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         </button>
         <button
           onClick={onHeaderClick}
-          className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
+          className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           title={detailOpen ? t("chat.closeProfile") : t("chat.viewProfile")}
           aria-label={t("chat.viewProfile")}
         >
@@ -272,7 +272,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             <div className="w-16 h-16 rounded-2xl bg-brand-soft border border-uni-lime/20 flex items-center justify-center mb-4 text-3xl">
               🌍
             </div>
-            <p className="text-lg font-semibold text-white">
+            <p className="text-lg font-semibold text-uni-text">
               {t("chat.emptyTitle")}
             </p>
             <p className="text-sm text-uni-muted mt-1 max-w-xs">
@@ -289,7 +289,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
           <div className="flex justify-center pb-1">
             <button
               onClick={loadOlder}
-              className="text-xs font-medium text-uni-muted hover:text-white bg-uni-surface border border-uni-border rounded-full px-4 py-1.5 transition-colors"
+              className="text-xs font-medium text-uni-muted hover:text-uni-text bg-uni-surface border border-uni-border rounded-full px-4 py-1.5 transition-colors"
             >
               {t("chat.loadOlder")}
             </button>
@@ -318,7 +318,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               <span>{t("chat.sendFailed")}</span>
               <button
                 onClick={handleRetry}
-                className="font-semibold text-white bg-red-500/80 hover:bg-red-500 px-2.5 py-1 rounded-md transition-colors"
+                className="font-semibold text-uni-text bg-red-500/80 hover:bg-red-500 px-2.5 py-1 rounded-md transition-colors"
               >
                 {t("chat.retry")}
               </button>
@@ -334,12 +334,12 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         <div className="flex items-center gap-2 md:gap-3">
           {/* Language indicator */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full bg-uni-surface border border-uni-border text-[11px] font-semibold text-uni-muted">
-            <span className="text-white">{sourceCode}</span>
+            <span className="text-uni-text">{sourceCode}</span>
             <Arrow />
             <span className="text-uni-cyan">{targetCode}</span>
           </div>
 
-          <div className="flex-1 flex items-center gap-2 bg-uni-surface border border-uni-border rounded-full pl-4 pr-2 py-1.5 focus-within:border-uni-lime/50 focus-within:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all">
+          <div className="flex-1 flex items-center gap-2 bg-uni-surface border border-uni-border rounded-full pl-4 pr-2 py-1.5 focus-within:border-uni-lime/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
             <input
               type="text"
               placeholder={
@@ -352,7 +352,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 if (e.target.value === "") setPendingKind(null);
               }}
               disabled={disabled}
-              className="flex-1 bg-transparent border-none outline-none text-sm md:text-[15px] text-white placeholder:text-uni-muted disabled:opacity-50"
+              className="flex-1 bg-transparent border-none outline-none text-sm md:text-[15px] text-uni-text placeholder:text-uni-muted disabled:opacity-50"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -388,7 +388,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               <button
                 type="button"
                 onClick={() => !isReceiverBlocked && setOpenEmoji((p) => !p)}
-                className="p-1.5 rounded-full text-uni-muted hover:text-white hover:bg-white/5 transition-colors"
+                className="p-1.5 rounded-full text-uni-muted hover:text-uni-text hover:bg-black/5 transition-colors"
                 aria-label={t("chat.emoji")}
               >
                 <EmojiIcon />
@@ -396,7 +396,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               {openEmoji && (
                 <span className="absolute bottom-12 right-0 z-20">
                   <EmojiPicker
-                    theme="dark"
+                    theme="light"
                     open={openEmoji}
                     onEmojiClick={handleEmoji}
                   />
@@ -418,7 +418,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         {/* Mobile language indicator */}
         <div className="sm:hidden mt-2 flex justify-center">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-uni-surface border border-uni-border text-[10px] font-semibold text-uni-muted">
-            <span className="text-white">{sourceCode}</span>
+            <span className="text-uni-text">{sourceCode}</span>
             <Arrow />
             <span className="text-uni-cyan">{targetCode}</span>
           </div>

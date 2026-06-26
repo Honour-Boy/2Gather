@@ -19,9 +19,9 @@ const Userinfo = () => {
         <Avatar user={currentUser} small className="text-sm" />
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] uppercase tracking-wider text-uni-muted font-semibold">
-            Unicomm
+            2Gather
           </span>
-          <h2 className="text-base font-semibold text-white truncate">
+          <h2 className="text-base font-semibold text-uni-text truncate">
             {currentUser?.fullName?.split(" ")[0] || "You"}
           </h2>
         </div>
@@ -29,7 +29,7 @@ const Userinfo = () => {
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => navigate("/settings")}
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
+          className="flex items-center justify-center w-10 h-10 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           aria-label={t("settings.editProfile")}
           title={t("settings.editProfile")}
         >

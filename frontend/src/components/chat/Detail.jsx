@@ -62,7 +62,7 @@ const Detail = ({ onClose }) => {
   })();
 
   return (
-    <div className="flex flex-col h-full text-white">
+    <div className="flex flex-col h-full text-uni-text">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-uni-border">
         <h3 className="text-sm font-semibold text-uni-muted uppercase tracking-wider">
@@ -70,7 +70,7 @@ const Detail = ({ onClose }) => {
         </h3>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
+          className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           aria-label={t("common.close")}
         >
           <svg
@@ -129,7 +129,7 @@ const Detail = ({ onClose }) => {
           disabled={isCurrentUserBlocked}
           className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
             isReceiverBlocked
-              ? "bg-uni-surface border border-uni-border text-white hover:bg-uni-surface2"
+              ? "bg-uni-surface border border-uni-border text-uni-text hover:bg-uni-surface2"
               : "bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20"
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >

@@ -43,7 +43,7 @@ const LogoutNow = () => {
         <polyline points="16 17 21 12 16 7" />
         <line x1="21" y1="12" x2="9" y2="12" />
       </svg>
-      <span className="absolute left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-white rounded-md whitespace-nowrap border border-uni-border shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30">
+      <span className="absolute left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-uni-text rounded-md whitespace-nowrap border border-uni-border shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30">
         {t("navbar.logout")}
       </span>
     </button>

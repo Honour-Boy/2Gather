@@ -55,12 +55,12 @@ const ForgotPassword = () => {
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-uni-text">
             {t("forgot.checkInbox")}
           </h2>
           <p className="text-sm text-uni-muted mt-1">
             {t("forgot.sentTo")} <br />
-            <span className="text-white">{email}</span>
+            <span className="text-uni-text">{email}</span>
           </p>
           <Link
             to="/login"
