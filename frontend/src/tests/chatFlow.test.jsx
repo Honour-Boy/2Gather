@@ -142,7 +142,12 @@ test("renders an incoming live snapshot: partner sees translation, prayer is tag
 test("composing and sending wires the text through to the message service", () => {
   render(<Chat onHeaderClick={() => {}} detailOpen={false} />);
 
-  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Amen" } });
+  // The composer input carries an accessible name (aria-label), not just a
+  // placeholder — so query it by role+name.
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "chat.messagePlaceholder" }),
+    { target: { value: "Amen" } }
+  );
   fireEvent.click(screen.getByRole("button", { name: "chat.send" }));
 
   expect(sendChatMessage).toHaveBeenCalledTimes(1);
@@ -159,7 +164,10 @@ test("an empty composer does not send", () => {
   render(<Chat onHeaderClick={() => {}} detailOpen={false} />);
 
   // Whitespace-only input stays disabled / no-ops.
-  fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } });
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "chat.messagePlaceholder" }),
+    { target: { value: "   " } }
+  );
   fireEvent.click(screen.getByRole("button", { name: "chat.send" }));
 
   expect(sendChatMessage).not.toHaveBeenCalled();

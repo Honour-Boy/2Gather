@@ -345,6 +345,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               placeholder={
                 disabled ? t("chat.cannotSend") : t("chat.messagePlaceholder")
               }
+              aria-label={t("chat.messagePlaceholder")}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
