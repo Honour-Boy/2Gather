@@ -208,7 +208,7 @@ const Settings = () => {
       await fetchUserInfo(currentUser.id);
 
       notify.success("Profile updated.");
-      setTimeout(() => navigate("/chat"), 800);
+      setTimeout(() => navigate("/home"), 800);
     } catch (err) {
       console.error("Profile update failed:", err);
       notify.error("Couldn't save your profile. Please try again.");
@@ -217,15 +217,15 @@ const Settings = () => {
   };
 
   return (
-    <div className="h-screen overflow-y-auto uni-scroll bg-uni-bg text-uni-text">
+    <div className="min-h-full bg-uni-bg text-uni-text">
       <Toaster />
 
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-uni-border bg-uni-bg/90 backdrop-blur">
         <button
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/home")}
           className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          aria-label={"Back to chat"}
+          aria-label={"Back"}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5" />
@@ -398,7 +398,7 @@ const Settings = () => {
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             type="button"
-            onClick={() => navigate("/chat")}
+            onClick={() => navigate("/home")}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           >
             {"Cancel"}

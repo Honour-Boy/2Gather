@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
 import useUserStore from "@/store/userStore";
-import Navbar from "@/components/common/Navbar";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 import ModeSwitcher from "@/components/modes/ModeSwitcher";
 import useModeStore from "@/store/modeStore";
@@ -74,9 +73,7 @@ const ChatRoom = () => {
   const closeDetail = () => setDetailOpen(false);
 
   return (
-    <div className="bg-uni-bg text-uni-text h-screen flex w-screen overflow-hidden">
-      <Navbar />
-
+    <div className="h-full flex w-full overflow-hidden">
       <div className="flex flex-1 min-w-0 relative">
         {/* Sidebar */}
         <aside

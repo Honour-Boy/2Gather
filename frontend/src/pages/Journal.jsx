@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { format } from "timeago.js";
-import Navbar from "@/components/common/Navbar";
 import useUserStore from "@/store/userStore";
 import {
   subscribeJournal,
@@ -21,7 +19,6 @@ const FILTERS = [
 // reflection note), plus free-form reflections. Entries live under
 // users/{uid}/journal (owner-only).
 export default function Journal() {
-  const navigate = useNavigate();
   const { currentUser } = useUserStore();
   const uid = currentUser?.id;
 
@@ -54,17 +51,8 @@ export default function Journal() {
       : entries.filter((e) => (e.kind || "reflection") === filter);
 
   return (
-    <div className="bg-uni-bg text-uni-text h-screen flex w-screen overflow-hidden">
-      <Navbar />
-      <main className="flex-1 min-w-0 overflow-y-auto uni-scroll px-4 md:px-8 py-6">
+    <main className="px-4 md:px-8 py-6">
         <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => navigate("/chat")}
-            className="md:hidden mb-4 text-sm text-uni-muted hover:text-uni-text"
-          >
-            ← Back to chats
-          </button>
-
           <h1 className="text-2xl font-display font-bold text-uni-text">Journal</h1>
           <p className="text-sm text-uni-muted mt-1">
             Keep the verses and prayers that steady you — and your own reflections.
@@ -127,7 +115,6 @@ export default function Journal() {
           </div>
         </div>
       </main>
-    </div>
   );
 }
 

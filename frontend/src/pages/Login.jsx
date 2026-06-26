@@ -41,7 +41,7 @@ function Login() {
       // No backend round-trip needed.
       await signInWithEmailAndPassword(auth, email, password);
       notify.success("Signed in. Redirecting…");
-      navigate("/chat");
+      navigate("/home");
     } catch (error) {
       console.error(error);
       notify.error("Invalid email or password.");
@@ -78,7 +78,7 @@ function Login() {
       if (!userData?.username) {
         navigate("/create-profile");
       } else {
-        navigate("/chat");
+        navigate("/home");
       }
     } catch (error) {
       console.error(error);

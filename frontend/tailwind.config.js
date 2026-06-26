@@ -5,12 +5,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        // Body: Inter (broad script coverage) → system/Noto fallback for the
-        // 30 UI languages (CJK, Arabic, etc.). Display: Space Grotesk for a
-        // bolder, geometric headline personality; falls back to the body stack
-        // for non-Latin scripts it doesn't cover.
+        // Body: Raleway — a calm, humanist sans for a warm, reverent feel.
+        // Display/headings: Lora — a soft serif that reads gentle and devotional.
+        // (Chosen via the UI/UX Pro Max skill for the calm/wellness/faith mood.)
         sans: [
-          "Inter",
+          "Raleway",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -19,13 +18,8 @@ module.exports = {
           "Noto Sans",
           "sans-serif",
         ],
-        display: [
-          "Space Grotesk",
-          "Inter",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
+        display: ["Lora", "Georgia", "ui-serif", "serif"],
+        serif: ["Lora", "Georgia", "ui-serif", "serif"],
       },
       colors: {
         // "Sacred Warmth" identity — a cream/ivory canvas with a gold heart and

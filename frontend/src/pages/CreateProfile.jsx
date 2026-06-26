@@ -68,7 +68,7 @@ const Profile = () => {
       notify.success("Profile created successfully!");
       // The user just authenticated to create the profile, so go straight to
       // chat; fall back to login only if the session somehow dropped.
-      navigate(auth.currentUser ? "/chat" : "/login");
+      navigate(auth.currentUser ? "/home" : "/login");
     } catch (error) {
       console.error("Profile creation error:", error.message);
       notify.error("Profile creation failed. Please try again.");
