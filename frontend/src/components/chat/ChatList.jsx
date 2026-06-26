@@ -206,15 +206,18 @@ const ChatList = () => {
       <Toaster />
       <div className="flex items-center gap-2 w-full">
         <div className="flex items-center gap-2 flex-1 bg-uni-surface border border-uni-border rounded-full px-3 py-2 focus-within:border-uni-lime/50 transition-colors">
-          <img
-            src={searchIcon}
-            alt="search"
-            className="w-4 h-4 cursor-pointer opacity-70"
+          <button
+            type="button"
             onClick={handleSearch}
-          />
+            aria-label={t("chatList.search", "Search")}
+            className="shrink-0 flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <img src={searchIcon} alt="" className="w-4 h-4" />
+          </button>
           <input
             type="text"
             placeholder={t("chatList.searchPlaceholder")}
+            aria-label={t("chatList.searchPlaceholder")}
             className="bg-transparent border-none outline-none text-sm text-white placeholder:text-uni-muted w-full flex-1"
             onChange={(e) => {
               setInput(e.target.value);
@@ -235,12 +238,14 @@ const ChatList = () => {
       {user && (
         <div className="mt-3 flex items-center justify-between gap-3 bg-uni-surface border border-uni-border p-3 rounded-xl w-full">
           <span className="text-white text-sm">{user.username}</span>
-          <img
-            src={plusIcon}
-            alt="add user"
-            className="w-5 h-5 cursor-pointer opacity-80 hover:opacity-100"
+          <button
+            type="button"
             onClick={() => handleAdd(user)}
-          />
+            aria-label={t("chatList.addUser", "Add user")}
+            className="shrink-0 flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
+          >
+            <img src={plusIcon} alt="" className="w-5 h-5" />
+          </button>
         </div>
       )}
       {suggestions.length > 0 && (
@@ -259,11 +264,7 @@ const ChatList = () => {
                   <span className="text-white text-xs">
                     {suggestion.username}
                   </span>
-                  <img
-                    src={plusIcon}
-                    alt="add user"
-                    className="w-4 h-4 cursor-pointer opacity-80"
-                  />
+                  <img src={plusIcon} alt="" className="w-4 h-4 opacity-80" />
                 </button>
               ))}
             </div>

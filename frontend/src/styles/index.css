@@ -46,6 +46,17 @@ h1 {
   }
 }
 
+/* Visible keyboard-focus indicator for every interactive element. :focus-visible
+   only matches keyboard/AT navigation, so mouse clicks stay ring-free while
+   keyboard users always get a clear brand-lime outline (meets the non-text
+   contrast requirement against the dark canvas). Layered on top of any
+   component-level focus styling. */
+:focus-visible {
+  outline: 2px solid #c6ff3d; /* uni-lime */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Hide scrollbars but keep scrollability */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
