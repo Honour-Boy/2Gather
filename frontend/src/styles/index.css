@@ -102,3 +102,13 @@ h1 {
 .uni-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Mobile: keep form controls at >=16px so iOS Safari doesn't auto-zoom the
+   viewport when an input/textarea/select is focused. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

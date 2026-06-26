@@ -168,11 +168,7 @@ const Profile = () => {
         onSubmit={handleSubmit}
         className="w-full max-w-lg p-7 sm:p-8 rounded-2xl shadow-2xl bg-uni-surface border border-uni-border"
       >
-        <div
-          className={`${
-            section === 0 ? "translate-x-0" : "-translate-x-screen"
-          }`}
-        >
+        <div key={section} className="animate-fade-in-up">
           {renderSection()}
         </div>
         <div className="flex justify-between mt-6">
