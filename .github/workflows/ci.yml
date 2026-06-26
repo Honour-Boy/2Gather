@@ -29,8 +29,7 @@ jobs:
       - name: Run tests (backend + frontend)
         run: npm test
 
-      # Lint is reported but does not block the pipeline (the codebase predates a clean
-      # lint gate). Tighten to a hard failure once warnings are cleared.
+      # Lint is now a hard gate: `npm run lint` runs with `--max-warnings 0`, so any
+      # error or warning fails the pipeline (warnings were cleared in issue #17).
       - name: Lint frontend
         run: npm run lint --prefix frontend
-        continue-on-error: true
