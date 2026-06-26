@@ -13,6 +13,8 @@ import useUserStore from "@/store/userStore";
 import EmojiPicker from "emoji-picker-react";
 import { isUserOnline } from "@/hooks/usePresence";
 import { sendChatMessage } from "@/services/messages";
+import { savePrayerToJournal } from "@/services/journal";
+import notify from "@/lib/toast";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { SendIcon, EmojiIcon } from "@/components/ui/icons";
 import Avatar from "@/components/ui/Avatar";
@@ -140,6 +142,16 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
     if (!isReceiverBlocked) setText((prev) => prev + e.emoji);
   };
 
+  const handleSavePrayer = async (prayerText) => {
+    if (!currentUser?.id) return;
+    try {
+      await savePrayerToJournal(currentUser.id, prayerText, activeMode || null);
+      notify.success("Saved to your journal.");
+    } catch {
+      notify.error("Couldn't save. Please try again.");
+    }
+  };
+
   const disabled = isCurrentUserBlocked || isReceiverBlocked;
 
   return (
@@ -245,6 +257,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             key={message.id}
             message={message}
             isMine={message.senderId === currentUser?.id}
+            onSave={handleSavePrayer}
           />
         ))}
 

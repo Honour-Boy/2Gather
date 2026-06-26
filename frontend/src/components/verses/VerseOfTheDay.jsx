@@ -4,9 +4,10 @@ import { fetchDailyVerse } from "@/lib/verses";
 // An ambient "verse of the day" card. Fails quietly (renders nothing) if the
 // backend is unreachable — it's a grace note, never a blocker. Optionally scope
 // to a theme (e.g. the user's active Mode in a later phase).
-export default function VerseOfTheDay({ theme, className = "" }) {
+export default function VerseOfTheDay({ theme, onSave, className = "" }) {
   const [verse, setVerse] = useState(null);
   const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -29,11 +30,25 @@ export default function VerseOfTheDay({ theme, className = "" }) {
     <div
       className={`rounded-2xl border border-uni-border bg-uni-surface/60 p-5 text-left ${className}`}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-uni-lime animate-pulse-dot" />
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-uni-lime">
-          Verse of the day
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-uni-gold animate-pulse-dot" />
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-uni-gold">
+            Verse of the day
+          </span>
         </span>
+        {onSave && status === "ready" && (
+          <button
+            onClick={() => {
+              onSave(verse);
+              setSaved(true);
+            }}
+            disabled={saved}
+            className="text-[11px] font-semibold text-uni-gold hover:underline disabled:opacity-60 disabled:no-underline"
+          >
+            {saved ? "Saved ✓" : "Save"}
+          </button>
+        )}
       </div>
 
       {status === "loading" ? (
