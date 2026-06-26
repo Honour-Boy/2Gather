@@ -30,8 +30,6 @@ const FIELDS = [
   "bio",
   "dob",
   "gender",
-  "organization",
-  "jobTitle",
   "avatarUrl",
 ];
 
@@ -312,12 +310,6 @@ const Settings = () => {
                 <option value="female">{"Female"}</option>
                 <option value="other">{"Other"}</option>
               </select>
-            </Field>
-            <Field label={"Organization"}>
-              <input type="text" value={form.organization} onChange={set("organization")} className={inputCls} placeholder={"Where you work"} />
-            </Field>
-            <Field label={"Job title"}>
-              <input type="text" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} placeholder={"Your role"} />
             </Field>
           </div>
         </Section>

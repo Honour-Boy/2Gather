@@ -13,8 +13,6 @@ const Profile = () => {
   const [dob, setDob] = useState("");
   const [bio, setBio] = useState("");
   const [gender, setGender] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const fetchUserInfo = useUserStore((s) => s.fetchUserInfo);
@@ -58,8 +56,6 @@ const Profile = () => {
         dob,
         bio,
         gender,
-        organization,
-        jobTitle,
       };
 
       await setDoc(doc(db, "users", user.uid), userProfile, { merge: true });
@@ -159,43 +155,6 @@ const Profile = () => {
             </div>
           </div>
         );
-      case 2:
-        return (
-          <div>
-            <div className="mb-4">
-              <label
-                className="block text-sm font-bold mb-2 text-left"
-                htmlFor="organization"
-              >
-                {"Organization"} *
-              </label>
-              <input
-                type="text"
-                id="organization"
-                value={organization}
-                onChange={(e) => setOrganization(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
-                required
-              />
-            </div>
-            <div className="mb-6">
-              <label
-                className="block text-sm font-bold mb-2 text-left"
-                htmlFor="jobTitle"
-              >
-                {"Job Title"} *
-              </label>
-              <input
-                type="text"
-                id="jobTitle"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
-                required
-              />
-            </div>
-          </div>
-        );
       default:
         return null;
     }
@@ -228,7 +187,7 @@ const Profile = () => {
           ) : (
             <span></span>
           )}
-          {section < 2 ? (
+          {section < 1 ? (
             <button
               type="button"
               onClick={handleNext}
