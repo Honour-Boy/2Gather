@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import LogoutNow from "./LogoutNow";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   return (
     <nav className="hidden md:flex w-16 lg:w-20 h-screen flex-col items-center justify-between bg-uni-bg border-r border-uni-border py-5">
       <div className="flex flex-col items-center gap-6">
@@ -14,7 +12,7 @@ const Navbar = () => {
           <span className="text-uni-on-accent font-display font-bold text-lg">U</span>
         </div>
 
-        <NavIcon label={t("navbar.chats")} active onClick={() => navigate("/chat")}>
+        <NavIcon label={"Chats"} active onClick={() => navigate("/chat")}>
           <svg
             width="20"
             height="20"
@@ -29,7 +27,7 @@ const Navbar = () => {
           </svg>
         </NavIcon>
 
-        <NavIcon label={t("navbar.profile")} onClick={() => navigate("/settings")}>
+        <NavIcon label={"Profile"} onClick={() => navigate("/settings")}>
           <svg
             width="20"
             height="20"
@@ -42,6 +40,22 @@ const Navbar = () => {
           >
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
+          </svg>
+        </NavIcon>
+
+        <NavIcon label={"Journal"} onClick={() => navigate("/journal")}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
           </svg>
         </NavIcon>
       </div>
@@ -65,13 +79,13 @@ const NavIcon = ({ children, label, active, onClick }) => {
         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
           active
             ? "bg-brand-soft text-uni-lime"
-            : "text-uni-muted hover:text-white hover:bg-white/5"
+            : "text-uni-muted hover:text-uni-text hover:bg-black/5"
         }`}
       >
         {children}
       </button>
       {hovered && (
-        <span className="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-white rounded-md whitespace-nowrap border border-uni-border shadow-lg z-30">
+        <span className="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-2.5 py-1 text-xs bg-uni-surface text-uni-text rounded-md whitespace-nowrap border border-uni-border shadow-lg z-30">
           {label}
         </span>
       )}

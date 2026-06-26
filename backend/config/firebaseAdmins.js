@@ -11,7 +11,7 @@ const admin = require('firebase-admin');
 //   1. FIREBASE_SERVICE_ACCOUNT       — the full service-account JSON as a string
 //                                        (set as a secret on Render / GitHub Actions).
 //   2. GOOGLE_APPLICATION_CREDENTIALS  — path to a JSON file (Google ADC standard).
-//   3. backend/config/unicomm.json     — local fallback (gitignored; see .gitignore).
+//   3. backend/config/serviceAccount.json     — local fallback (gitignored; see .gitignore).
 // See DEPLOYMENT.md for how to obtain and set the credential.
 function resolveCredential() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -20,9 +20,20 @@ function resolveCredential() {
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     return admin.credential.applicationDefault();
   }
-  // Local-only fallback. Never committed.
-  const serviceAccount = require('./unicomm.json');
-  return admin.credential.cert(serviceAccount);
+  // Local-only fallback: the 2Gather (gather-bd64a) service-account JSON.
+  // Download via Firebase console → gather-bd64a → Project settings →
+  // Service accounts → Generate new private key, then save it here. Gitignored.
+  const fs = require('fs');
+  const path = require('path');
+  const localKey = path.join(__dirname, 'serviceAccount.json');
+  if (fs.existsSync(localKey)) {
+    return admin.credential.cert(require('./serviceAccount.json'));
+  }
+  throw new Error(
+    'No Firebase credential found. Set FIREBASE_SERVICE_ACCOUNT or ' +
+    'GOOGLE_APPLICATION_CREDENTIALS, or place a gather-bd64a service-account key ' +
+    'at backend/config/serviceAccount.json.'
+  );
 }
 
 admin.initializeApp({ credential: resolveCredential() });

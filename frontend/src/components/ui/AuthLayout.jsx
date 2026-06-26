@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 // Shared shell for the auth screens (login, register, forgot password):
-// centered card on the gradient background, with the Unicomm home link.
+// centered card on the gradient background, with the 2Gather home link.
 const AuthLayout = ({ title, subtitle, children, wide = false }) => (
   <div className="min-h-screen w-screen bg-uni-bg text-uni-text font-sans flex items-center justify-center px-4 py-10 relative overflow-hidden">
     <div className="pointer-events-none absolute inset-0 -z-10">
@@ -16,9 +16,9 @@ const AuthLayout = ({ title, subtitle, children, wide = false }) => (
     >
       <Link to="/" className="flex items-center gap-2 mb-6">
         <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">
-          <span className="text-uni-on-accent font-display font-bold text-sm">U</span>
+          <span className="text-uni-on-accent font-display font-bold text-sm">2</span>
         </div>
-        <span className="font-display font-bold tracking-tight">Unicomm</span>
+        <span className="font-display font-bold tracking-tight">2Gather</span>
       </Link>
 
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1>

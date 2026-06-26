@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 // which dismisses the previous toast before showing a new one (replace, not
 // stack). `hideProgressBar` removes the timer bar the owner disliked.
 const Toaster = () => (
-  <ToastContainer position="top-center" theme="dark" hideProgressBar />
+  <ToastContainer position="top-center" theme="light" hideProgressBar />
 );
 
 export default Toaster;

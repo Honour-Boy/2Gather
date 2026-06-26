@@ -1,5 +1,5 @@
 **1. Introduction**
-Welcome to UniComm. By accessing and using our services, you agree to comply with and be bound by the following terms and conditions. Please review these terms carefully. If you do not agree with these terms, you should not use our services.
+Welcome to 2Gather. By accessing and using our services, you agree to comply with and be bound by the following terms and conditions. Please review these terms carefully. If you do not agree with these terms, you should not use our services.
 
 **2. Use of Services**
  • You must be at least 18 years old to use our services.
@@ -8,7 +8,7 @@ Welcome to UniComm. By accessing and using our services, you agree to comply wit
 
 **3. User Content**
  • You retain ownership of any content you submit, post, or display on or through our services.
- • By submitting content, you grant UniComm a worldwide, non-exclusive, royalty-free license to use, copy, reproduce, process, adapt, modify, publish, transmit, display, and distribute such content.
+ • By submitting content, you grant 2Gather a worldwide, non-exclusive, royalty-free license to use, copy, reproduce, process, adapt, modify, publish, transmit, display, and distribute such content.
 
 **4. Prohibited Activities**
 You agree not to engage in any of the following prohibited activities:
@@ -21,7 +21,7 @@ You agree not to engage in any of the following prohibited activities:
 We reserve the right to terminate or suspend your account and access to our services at our sole discretion, without notice, for conduct that we believe violates these terms or is harmful to other users of our services, us, or third parties, or for any other reason.
 
 **6. Limitation of Liability**
-UniComm shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from:
+2Gather shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from:
  • Your use or inability to use the services.
  • Any unauthorized access to or use of our servers and/or any personal information stored therein.
  • Any interruption or cessation of transmission to or from our services.
@@ -30,7 +30,7 @@ UniComm shall not be liable for any indirect, incidental, special, consequential
 We reserve the right to modify these terms at any time. We will notify you of any changes by posting the new terms on our website. You are advised to review these terms periodically for any changes. Changes to these terms are effective when they are posted on this page.
 
 **8. Governing Law**
-These terms shall be governed and construed in accordance with the laws of the jurisdiction in which UniComm operates, without regard to its conflict of law provisions.
+These terms shall be governed and construed in accordance with the laws of the jurisdiction in which 2Gather operates, without regard to its conflict of law provisions.
 
 **9. Contact Us**
-If you have any questions about these terms, please contact us at support@unicomm.com.
+If you have any questions about these terms, please contact us at support@2gather.app.

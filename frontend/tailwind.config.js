@@ -28,39 +28,45 @@ module.exports = {
         ],
       },
       colors: {
-        // "Electric Duotone" identity — OLED-dark canvas + lime→cyan brand with
-        // a magenta accent. Tokens keep the `uni-` names so the whole app
-        // re-skins from here.
+        // "Sacred Warmth" identity — a cream/ivory canvas with a gold heart and
+        // soft-blue accents over a glowing cross, mirroring the 2Gather logo.
+        // Tokens keep the `uni-` names so the whole app re-skins from here.
+        // NOTE: `lime` / `cyan` / `magenta` are now LEGACY ALIASES (mapped to
+        // gold / soft-blue / terracotta) so existing bg-uni-lime / text-uni-cyan
+        // classes re-skin without a project-wide rename.
         uni: {
-          bg: "#0A0B0F",
-          surface: "#14161C",
-          surface2: "#1E212B",
-          border: "#2A2E3A",
-          muted: "#8B90A0",
-          text: "#ECEEF3",
-          lime: "#C6FF3D",
-          cyan: "#2DE2FF",
-          magenta: "#FF3D8A",
-          accent: "#C6FF3D", // primary = electric lime
-          accent2: "#2DE2FF", // secondary = electric cyan
-          online: "#34E5A8",
-          "on-accent": "#0A0B0F", // near-black text on bright accents
+          bg: "#FBF6EC", // cream / ivory canvas
+          surface: "#FFFFFF", // white cards
+          surface2: "#F5EDDD", // warm raised panel
+          border: "#E8DCC4", // warm hairline
+          muted: "#6E6657", // warm gray (>=4.5:1 on cream)
+          text: "#2A2722", // warm near-black
+          lime: "#DDA23A", // [legacy alias] → gold
+          cyan: "#6E96C4", // [legacy alias] → soft blue
+          magenta: "#C77B5E", // [legacy alias] → warm terracotta
+          gold: "#DDA23A",
+          blue: "#6E96C4",
+          accent: "#DDA23A", // primary = gold
+          accent2: "#6E96C4", // secondary = soft blue
+          online: "#5BA86F", // warm green
+          glow: "#F4C95D", // cross / halo glow
+          "on-accent": "#2A2722", // warm-dark text on gold accents
         },
       },
       backgroundImage: {
-        "login-pic": "url('/src/assets/loginBackground.jpeg')",
-        // Signature brand gradient (lime → cyan). Used for marks, primary
-        // buttons and sent message bubbles (with near-black text).
-        "brand": "linear-gradient(135deg, #C6FF3D 0%, #2DE2FF 100%)",
+        // Signature warm gradient (gold → deeper amber). Used for the mark,
+        // primary buttons and sent message bubbles (with warm-dark text).
+        "brand": "linear-gradient(135deg, #EBB755 0%, #D98E33 100%)",
         "brand-soft":
-          "linear-gradient(135deg, rgba(198,255,61,0.16) 0%, rgba(45,226,255,0.16) 100%)",
-        "bubble-sent": "linear-gradient(135deg, #C6FF3D 0%, #2DE2FF 100%)",
+          "linear-gradient(135deg, rgba(221,162,58,0.16) 0%, rgba(110,150,196,0.16) 100%)",
+        "bubble-sent": "linear-gradient(135deg, #EBB755 0%, #D98E33 100%)",
       },
       boxShadow: {
-        // Lime-tinted glow for primary surfaces.
-        bubble: "0 4px 20px rgba(198, 255, 61, 0.18)",
-        glow: "0 0 24px rgba(198, 255, 61, 0.25)",
-        "glow-cyan": "0 0 24px rgba(45, 226, 255, 0.25)",
+        // Soft, warm, paper-like shadows for the light canvas.
+        bubble: "0 6px 20px rgba(217, 142, 51, 0.20)",
+        glow: "0 0 28px rgba(244, 201, 93, 0.35)",
+        "glow-cyan": "0 0 24px rgba(110, 150, 196, 0.28)",
+        card: "0 1px 2px rgba(42, 39, 34, 0.06), 0 10px 30px rgba(42, 39, 34, 0.06)",
       },
       keyframes: {
         "fade-in-up": {

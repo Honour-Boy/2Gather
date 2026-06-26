@@ -11,8 +11,8 @@ describe("parseAllowedOrigins", () => {
 
   test("splits a comma list and trims whitespace", () => {
     expect(
-      parseAllowedOrigins("https://unicomm-org.vercel.app, http://localhost:5173")
-    ).toEqual(["https://unicomm-org.vercel.app", "http://localhost:5173"]);
+      parseAllowedOrigins("https://2gather.vercel.app, http://localhost:5173")
+    ).toEqual(["https://2gather.vercel.app", "http://localhost:5173"]);
   });
 
   test("drops empty entries from trailing/double commas", () => {

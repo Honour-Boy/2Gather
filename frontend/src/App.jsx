@@ -6,6 +6,7 @@ import Profile from "./pages/CreateProfile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ChatRoom from "./pages/ChatRoom";
 import Settings from "./pages/Settings";
+import Journal from "./pages/Journal";
 import NotFound from "./pages/NotFound";
 import PrivateRouter from "@/components/routers/PrivateRouter";
 import PublicRouter from "@/components/routers/PublicRouter";
@@ -101,6 +102,14 @@ function App() {
             element={
               <PrivateRouter>
                 <Settings />
+              </PrivateRouter>
+            }
+          />
+          <Route
+            path="/journal"
+            element={
+              <PrivateRouter>
+                <Journal />
               </PrivateRouter>
             }
           />

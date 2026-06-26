@@ -16,6 +16,8 @@
 // when server.js is imported by tests — never initializes firebase-admin or needs
 // credentials (CI has none).
 
+const { notifyNewMessage } = require("./notifications");
+
 let _admin;
 function getAdmin() {
   if (!_admin) _admin = require("./config/firebaseAdmins");
@@ -82,6 +84,13 @@ async function userchatsSyncHandler(req, res) {
     if (!chatId) return res.status(400).json({ error: "chatId is required" });
 
     await syncChatIndex(chatId, decoded.uid);
+
+    // Best-effort FCM push to the recipient (Phase 5). Never blocks the response,
+    // and is a no-op if they have no tokens / opted out (see notifications.js).
+    notifyNewMessage(getAdmin(), { chatId, callerUid: decoded.uid }).catch((e) =>
+      console.warn("notify failed:", e && e.message)
+    );
+
     return res.json({ ok: true });
   } catch (err) {
     const status = err.status || (err.code === "auth/argument-error" ? 401 : 500);

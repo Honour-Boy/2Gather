@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import useUserStore from "@/store/userStore";
 import Avatar from "@/components/ui/Avatar";
 import LogoutNow from "@/components/common/LogoutNow";
@@ -7,21 +6,20 @@ import LogoutNow from "@/components/common/LogoutNow";
 const Userinfo = () => {
   const { currentUser } = useUserStore();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   return (
     <div className="flex items-center justify-between px-4 py-4 border-b border-uni-border">
       <button
         onClick={() => navigate("/settings")}
         className="flex items-center gap-3 min-w-0 rounded-lg p-1 -m-1 hover:bg-uni-surface/60 transition-colors text-left"
-        aria-label={t("settings.editProfile")}
+        aria-label={"Edit profile"}
       >
         <Avatar user={currentUser} small className="text-sm" />
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] uppercase tracking-wider text-uni-muted font-semibold">
-            Unicomm
+            2Gather
           </span>
-          <h2 className="text-base font-semibold text-white truncate">
+          <h2 className="text-base font-semibold text-uni-text truncate">
             {currentUser?.fullName?.split(" ")[0] || "You"}
           </h2>
         </div>
@@ -29,9 +27,9 @@ const Userinfo = () => {
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => navigate("/settings")}
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-uni-muted hover:text-white hover:bg-uni-surface transition-colors"
-          aria-label={t("settings.editProfile")}
-          title={t("settings.editProfile")}
+          className="flex items-center justify-center w-10 h-10 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
+          aria-label={"Edit profile"}
+          title={"Edit profile"}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />

@@ -27,5 +27,11 @@ module.exports = {
       files: ['**/*.test.{js,jsx}', 'src/tests/**'],
       env: { jest: true },
     },
+    {
+      // Build/tooling config files run in Node (CommonJS globals like `module`),
+      // not the browser — e.g. tailwind.config.js uses `module.exports`.
+      files: ['*.config.js'],
+      env: { node: true },
+    },
   ],
 }

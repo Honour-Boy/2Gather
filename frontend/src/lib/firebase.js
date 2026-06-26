@@ -5,12 +5,12 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: "unicomm-2d7bc.firebaseapp.com",
-  projectId: "unicomm-2d7bc",
-  storageBucket: "unicomm-2d7bc.appspot.com",
-  messagingSenderId: "1042138331910",
-  appId: "1:1042138331910:web:2593196bc18f73e53ebc87",
-  measurementId: "G-MJXW30T946"
+  authDomain: "gather-bd64a.firebaseapp.com",
+  projectId: "gather-bd64a",
+  storageBucket: "gather-bd64a.firebasestorage.app",
+  messagingSenderId: "770784241542",
+  appId: "1:770784241542:web:6f449df66ebf77ed3dee07",
+  measurementId: "G-X4HEVGF28C"
 };
 
 // Initialize Firebase
@@ -28,5 +28,5 @@ const googleProvider = new GoogleAuthProvider();
 
 console.log('Firebase initialized successfully.');
 
-// Export auth and db
-export { auth, db, googleProvider, storage };
+// Export the app (needed by FCM messaging) along with the services.
+export { app, auth, db, googleProvider, storage };
