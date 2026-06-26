@@ -40,7 +40,7 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
         aria-label="Prayer templates"
         aria-expanded={open}
         title="Prayer templates"
-        className="p-1.5 rounded-full text-uni-muted hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+        className="p-1.5 rounded-full text-uni-muted hover:text-uni-text hover:bg-black/5 transition-colors disabled:opacity-50"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2v6" />
@@ -71,7 +71,7 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
                 onClick={() => pick(tpl.body)}
                 className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-uni-surface2 transition-colors"
               >
-                <span className="block text-sm font-medium text-white">
+                <span className="block text-sm font-medium text-uni-text">
                   {tpl.title}
                 </span>
                 <span className="block text-xs text-uni-muted line-clamp-2">

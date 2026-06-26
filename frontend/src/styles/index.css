@@ -9,7 +9,7 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -17,8 +17,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: #0a0b0f;
-  color: #eceef3;
+  background: #fbf6ec;
+  color: #2a2722;
 }
 
 /* Display headings use Space Grotesk for the bolder identity; non-Latin
@@ -52,7 +52,7 @@ h1 {
    contrast requirement against the dark canvas). Layered on top of any
    component-level focus styling. */
 :focus-visible {
-  outline: 2px solid #c6ff3d; /* uni-lime */
+  outline: 2px solid #dda23a; /* uni-gold */
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -69,9 +69,9 @@ h1 {
 /* Auth form primitives */
 @layer components {
   .auth-input {
-    @apply w-full rounded-xl bg-uni-bg/60 border border-uni-border text-white text-sm
+    @apply w-full rounded-xl bg-uni-surface border border-uni-border text-uni-text text-sm
            px-4 py-2.5 placeholder:text-uni-muted outline-none
-           focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)]
+           focus:border-uni-gold/70 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.18)]
            transition-all disabled:opacity-60;
   }
   .auth-primary-btn {
@@ -93,11 +93,11 @@ h1 {
   width: 6px;
 }
 .uni-scroll::-webkit-scrollbar-thumb {
-  background-color: #2a2e3a;
+  background-color: #e0d2b6;
   border-radius: 9999px;
 }
 .uni-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #3a3f4e;
+  background-color: #d0bd97;
 }
 .uni-scroll::-webkit-scrollbar-track {
   background: transparent;

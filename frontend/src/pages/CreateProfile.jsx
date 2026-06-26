@@ -115,7 +115,7 @@ const Profile = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="@ex123"
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               />
             </div>
@@ -131,7 +131,7 @@ const Profile = () => {
                 id="dob"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all accent-uni-lime calendar-icon-white"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all accent-uni-lime calendar-icon-white"
                 required
               />
             </div>
@@ -146,7 +146,7 @@ const Profile = () => {
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all max-h-24 resize-none"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all max-h-24 resize-none"
                 required
               />
             </div>
@@ -166,7 +166,7 @@ const Profile = () => {
                 id="gender"
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               >
                 <option value="">{t("profile.selectGender")}</option>
@@ -186,7 +186,7 @@ const Profile = () => {
                 id="language"
                 value={language}
                 onChange={handleLanguageChange}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               >
                 <option value="">{t("profile.selectLanguage")}</option>
@@ -214,7 +214,7 @@ const Profile = () => {
                 id="organization"
                 value={organization}
                 onChange={(e) => setOrganization(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               />
             </div>
@@ -230,7 +230,7 @@ const Profile = () => {
                 id="jobTitle"
                 value={jobTitle}
                 onChange={(e) => setJobTitle(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-bg/60 border border-uni-border text-white rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(198,255,61,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               />
             </div>
@@ -261,7 +261,7 @@ const Profile = () => {
             <button
               type="button"
               onClick={handlePrevious}
-              className="py-2.5 px-5 rounded-xl text-sm font-semibold bg-uni-surface2 border border-uni-border text-white hover:border-uni-lime/40 transition-colors"
+              className="py-2.5 px-5 rounded-xl text-sm font-semibold bg-uni-surface2 border border-uni-border text-uni-text hover:border-uni-lime/40 transition-colors"
             >
               {"<"} {t("profile.previous")}
             </button>
@@ -290,7 +290,7 @@ const Profile = () => {
       <style>
         {`
           .calendar-icon-white::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+            filter: none;
           }
         `}
       </style>

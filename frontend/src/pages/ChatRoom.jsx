@@ -29,7 +29,7 @@ const EmptyChatState = () => {
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold text-white">
+      <h2 className="text-xl font-semibold text-uni-text">
         {t("chatRoom.selectTitle")}
       </h2>
       <p className="text-sm text-uni-muted mt-2 max-w-sm">

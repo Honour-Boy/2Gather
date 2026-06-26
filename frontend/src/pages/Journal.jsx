@@ -55,12 +55,12 @@ export default function Journal() {
         <div className="max-w-2xl mx-auto">
           <button
             onClick={() => navigate("/chat")}
-            className="md:hidden mb-4 text-sm text-uni-muted hover:text-white"
+            className="md:hidden mb-4 text-sm text-uni-muted hover:text-uni-text"
           >
             ← Back to chats
           </button>
 
-          <h1 className="text-2xl font-display font-bold text-white">Journal</h1>
+          <h1 className="text-2xl font-display font-bold text-uni-text">Journal</h1>
           <p className="text-sm text-uni-muted mt-1">
             Reflections, prayers, and gratitude — tagged by your mode.
           </p>
@@ -76,7 +76,7 @@ export default function Journal() {
               onChange={(e) => setBody(e.target.value)}
               rows={4}
               placeholder="Write a reflection…"
-              className="w-full bg-transparent outline-none resize-none text-sm text-white placeholder:text-uni-muted"
+              className="w-full bg-transparent outline-none resize-none text-sm text-uni-text placeholder:text-uni-muted"
             />
             <div className="mt-3 flex items-center justify-between gap-3">
               <select
@@ -158,7 +158,7 @@ const FilterPill = ({ active, onClick, children }) => (
     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
       active
         ? "bg-brand text-uni-on-accent"
-        : "bg-uni-surface border border-uni-border text-uni-muted hover:text-white"
+        : "bg-uni-surface border border-uni-border text-uni-muted hover:text-uni-text"
     }`}
   >
     {children}

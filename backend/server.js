@@ -12,7 +12,7 @@ const port = process.env.PORT || 8001;
 
 // Parse comma-separated CORS origins from env (trimmed, empties removed) so the
 // deployed frontend and local dev both work without code edits. Defaults to
-// local Vite. e.g. CORS_ORIGIN=https://unicomm-org.vercel.app,http://localhost:5173
+// local Vite. e.g. CORS_ORIGIN=https://2gather.vercel.app,http://localhost:5173
 function parseAllowedOrigins(value) {
   return (value || "http://localhost:5173")
     .split(",")

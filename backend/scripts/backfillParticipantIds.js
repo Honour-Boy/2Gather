@@ -9,7 +9,7 @@
 //
 // The Admin SDK bypasses Firestore rules, so this works regardless of whether the
 // new rules are deployed yet. It uses the service account resolved by
-// ../config/firebaseAdmins.js (locally: backend/config/unicomm.json).
+// ../config/firebaseAdmins.js (locally: backend/config/serviceAccount.json).
 //
 // Usage (from the backend/ folder):
 //   node scripts/backfillParticipantIds.js            # DRY RUN — prints planned changes

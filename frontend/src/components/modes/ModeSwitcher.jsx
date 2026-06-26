@@ -10,7 +10,7 @@ export default function ModeSwitcher({ className = "" }) {
     `px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
       selected
         ? "bg-brand text-uni-on-accent shadow-bubble"
-        : "bg-uni-surface border border-uni-border text-uni-muted hover:text-white hover:border-uni-lime/40"
+        : "bg-uni-surface border border-uni-border text-uni-muted hover:text-uni-text hover:border-uni-lime/40"
     }`;
 
   return (

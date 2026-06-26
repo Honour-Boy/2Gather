@@ -1,5 +1,5 @@
 **1. Introduction**
-UniComm is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our services.
+2Gather is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our services.
 
 **2. Information We Collect**
 **Personal Information:**
@@ -39,5 +39,5 @@ Depending on your location, you may have the following rights regarding your per
 We may update our Privacy Policy from time to time. Any changes will be posted on this page, and we encourage you to review it periodically. Changes take effect upon posting.
 
 **8. Contact Us**
-If you have any questions about this Privacy Policy, please contact us at **privacy@unicomm.com**.
+If you have any questions about this Privacy Policy, please contact us at **privacy@2gather.app**.
 

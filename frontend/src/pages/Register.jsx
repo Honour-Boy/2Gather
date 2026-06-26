@@ -106,7 +106,7 @@ function Register() {
       {showPopup && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-uni-surface border border-uni-border text-uni-text rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto uni-scroll p-6">
-            <h2 className="text-xl font-bold mb-3 text-white">
+            <h2 className="text-xl font-bold mb-3 text-uni-text">
               {popupContent === "terms"
                 ? t("register.termsTitle")
                 : t("register.privacyTitle")}
@@ -172,7 +172,7 @@ function Register() {
                 <button
                   type="button"
                   onClick={togglePassword}
-                  className="absolute inset-y-0 right-3 flex items-center text-uni-muted hover:text-white"
+                  className="absolute inset-y-0 right-3 flex items-center text-uni-muted hover:text-uni-text"
                   aria-label={t("register.password")}
                 >
                   <img src={passwordShow.img} className="w-4" alt="" />
