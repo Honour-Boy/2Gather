@@ -159,7 +159,7 @@ function Login() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={googleLoading}
-          className="auth-secondary-btn"
+          className="auth-secondary-btn text-black"
         >
           {googleLoading ? (
             <Spinner />

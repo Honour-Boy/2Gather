@@ -101,8 +101,6 @@ const Detail = ({ onClose }) => {
       {/* Info */}
       <div className="flex-1 overflow-y-auto uni-scroll px-6 py-5 space-y-4">
         <InfoRow label={"Email"} value={user?.email} />
-        <InfoRow label={"Job Title"} value={user?.jobTitle || "—"} />
-        <InfoRow label={"Organization"} value={user?.organization || "—"} />
         <div>
           <p className="text-xs font-semibold text-uni-muted uppercase tracking-wider mb-1">
             {"Bio"}
