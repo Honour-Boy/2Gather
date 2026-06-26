@@ -2,24 +2,40 @@
 import { Link } from "react-router-dom";
 import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
+import useUserStore from "@/store/userStore";
 import Navbar from "@/components/common/Navbar";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 import ModeSwitcher from "@/components/modes/ModeSwitcher";
 import useModeStore from "@/store/modeStore";
 import { themeForMode } from "@/lib/modes";
+import { saveVerseToJournal } from "@/services/journal";
+import notify from "@/lib/toast";
 
 const EmptyChatState = () => {
   const { activeMode } = useModeStore();
+  const { currentUser } = useUserStore();
   const theme = themeForMode(activeMode);
+  const uid = currentUser?.id;
+
+  const handleSaveVerse = async (verse) => {
+    if (!uid) return;
+    try {
+      await saveVerseToJournal(uid, { ...verse, mode: activeMode || null });
+      notify.success("Saved to your journal.");
+    } catch {
+      notify.error("Couldn't save. Please try again.");
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-full w-full text-center px-6">
-      <div className="w-20 h-20 rounded-3xl bg-brand-soft border border-uni-lime/20 flex items-center justify-center mb-5">
+      <div className="w-20 h-20 rounded-3xl bg-brand-soft border border-uni-gold/20 flex items-center justify-center mb-5 text-uni-gold">
         <svg
           width="32"
           height="32"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#C6FF3D"
+          stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -28,16 +44,20 @@ const EmptyChatState = () => {
         </svg>
       </div>
       <h2 className="text-xl font-semibold text-uni-text">
-        {"Select a chat to start messaging"}
+        {"Pick a conversation to start praying"}
       </h2>
       <p className="text-sm text-uni-muted mt-2 max-w-sm">
-        {"Choose a conversation from the sidebar, or search for a contact to begin a new multilingual conversation."}
+        {"Choose a chat from the sidebar, or tap ＋ to find someone to pray with."}
       </p>
       <ModeSwitcher className="mt-6 max-w-md" />
-      <VerseOfTheDay theme={theme} className="mt-5 w-full max-w-sm" />
+      <VerseOfTheDay
+        theme={theme}
+        onSave={uid ? handleSaveVerse : undefined}
+        className="mt-5 w-full max-w-sm"
+      />
       <Link
         to="/journal"
-        className="mt-5 text-xs font-medium text-uni-muted hover:text-uni-lime transition-colors"
+        className="mt-5 text-xs font-medium text-uni-muted hover:text-uni-gold transition-colors"
       >
         Open your journal →
       </Link>
