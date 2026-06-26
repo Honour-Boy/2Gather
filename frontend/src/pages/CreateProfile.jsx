@@ -1,20 +1,15 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { db, auth } from "@/lib/firebase"; // Ensure firebase.js is correctly configured
 import { doc, setDoc, getDocs, collection } from "firebase/firestore";
 import { where, query } from "firebase/firestore";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
 import useUserStore from "@/store/userStore";
-import { UI_LANGUAGES, setUiLanguage } from "@/lib/i18n";
-import { supportedLanguages } from "@/components/common/Languages";
 
 const Profile = () => {
-  const { t } = useTranslation();
   const [section, setSection] = useState(0);
   const [username, setUsername] = useState("");
-  const [language, setLanguage] = useState("");
   const [dob, setDob] = useState("");
   const [bio, setBio] = useState("");
   const [gender, setGender] = useState("");
@@ -23,13 +18,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const fetchUserInfo = useUserStore((s) => s.fetchUserInfo);
-
-  // Just record the chosen preferred language for the profile. We intentionally
-  // do NOT switch the live UI language here — only the landing-page switcher and
-  // Settings change the UI language (owner request, 2026-06-04).
-  const handleLanguageChange = (e) => {
-    setLanguage(e.target.value);
-  };
 
   const handleNext = () => {
     setSection((prev) => prev + 1);
@@ -43,13 +31,13 @@ const Profile = () => {
     e.preventDefault();
     const user = auth.currentUser;
     if (!user) {
-      notify.error(t("profile.notAuthenticated"));
+      notify.error("User not authenticated");
       return;
     }
 
     // Ensure username starts with "@"
     if (!username.startsWith("@")) {
-      notify.error(t("profile.usernameAt"));
+      notify.error("Username must start with \"@\"");
       return;
     }
     setLoading(true);
@@ -59,7 +47,7 @@ const Profile = () => {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      notify.warn(t("profile.selectAnotherUsername"));
+      notify.warn("Select another username");
       setLoading(false);
       return;
     }
@@ -67,7 +55,6 @@ const Profile = () => {
     try {
       const userProfile = {
         username,
-        language,
         dob,
         bio,
         gender,
@@ -82,18 +69,13 @@ const Profile = () => {
       // see the stale profile-less doc and bounce straight back here.
       await fetchUserInfo(user.uid);
 
-      // Apply the chosen language now, on submit — the profile language becomes
-      // the UI language shown throughout the app (changed only from the profile
-      // afterward). We deliberately don't switch live while the dropdown is open.
-      if (UI_LANGUAGES.includes(language)) setUiLanguage(language);
-
-      notify.success(t("profile.profileCreated"));
+      notify.success("Profile created successfully!");
       // The user just authenticated to create the profile, so go straight to
       // chat; fall back to login only if the session somehow dropped.
       navigate(auth.currentUser ? "/chat" : "/login");
     } catch (error) {
       console.error("Profile creation error:", error.message);
-      notify.error(t("profile.profileFailed"));
+      notify.error("Profile creation failed. Please try again.");
     }
   };
 
@@ -107,7 +89,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="username"
               >
-                {t("profile.username")} *
+                {"Username"} *
               </label>
               <input
                 type="text"
@@ -124,7 +106,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="dob"
               >
-                {t("profile.dob")} *
+                {"Date of Birth"} *
               </label>
               <input
                 type="date"
@@ -140,7 +122,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="bio"
               >
-                {t("profile.bio")} *
+                {"Bio"} *
               </label>
               <textarea
                 id="bio"
@@ -160,7 +142,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="gender"
               >
-                {t("profile.gender")} *
+                {"Gender"} *
               </label>
               <select
                 id="gender"
@@ -169,32 +151,10 @@ const Profile = () => {
                 className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               >
-                <option value="">{t("profile.selectGender")}</option>
-                <option value="male">{t("profile.male")}</option>
-                <option value="female">{t("profile.female")}</option>
-                <option value="other">{t("profile.other")}</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <label
-                className="block text-sm font-bold mb-2 text-left"
-                htmlFor="language"
-              >
-                {t("profile.language")} *
-              </label>
-              <select
-                id="language"
-                value={language}
-                onChange={handleLanguageChange}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
-                required
-              >
-                <option value="">{t("profile.selectLanguage")}</option>
-                {supportedLanguages.map((lang) => (
-                  <option key={lang.value} value={lang.value}>
-                    {lang.label}
-                  </option>
-                ))}
+                <option value="">{"Select Gender"}</option>
+                <option value="male">{"Male"}</option>
+                <option value="female">{"Female"}</option>
+                <option value="other">{"Other"}</option>
               </select>
             </div>
           </div>
@@ -207,7 +167,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="organization"
               >
-                {t("profile.organization")} *
+                {"Organization"} *
               </label>
               <input
                 type="text"
@@ -223,7 +183,7 @@ const Profile = () => {
                 className="block text-sm font-bold mb-2 text-left"
                 htmlFor="jobTitle"
               >
-                {t("profile.jobTitle")} *
+                {"Job Title"} *
               </label>
               <input
                 type="text"
@@ -244,7 +204,7 @@ const Profile = () => {
   return (
     <div className="flex flex-col gap-8 items-center h-screen overflow-y-auto uni-scroll bg-uni-bg text-uni-text px-4 py-12">
       <Toaster />
-      <h1 className="text-4xl sm:text-5xl font-bold">{t("profile.title")}</h1>
+      <h1 className="text-4xl sm:text-5xl font-bold">{"Set up your Profile"}</h1>
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-lg p-7 sm:p-8 rounded-2xl shadow-2xl bg-uni-surface border border-uni-border"
@@ -263,7 +223,7 @@ const Profile = () => {
               onClick={handlePrevious}
               className="py-2.5 px-5 rounded-xl text-sm font-semibold bg-uni-surface2 border border-uni-border text-uni-text hover:border-uni-lime/40 transition-colors"
             >
-              {"<"} {t("profile.previous")}
+              {"<"} {"Previous"}
             </button>
           ) : (
             <span></span>
@@ -274,7 +234,7 @@ const Profile = () => {
               onClick={handleNext}
               className="py-2.5 px-5 rounded-xl text-sm font-bold bg-brand text-uni-on-accent shadow-bubble hover:shadow-glow transition-all"
             >
-              {t("profile.next")} {">"}
+              {"Next"} {">"}
             </button>
           ) : (
             <button
@@ -282,7 +242,7 @@ const Profile = () => {
               className="py-2.5 px-5 rounded-xl text-sm font-bold bg-brand text-uni-on-accent shadow-bubble hover:shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               disabled={loading}
             >
-              {loading ? t("profile.creating") : t("profile.submit")}
+              {loading ? "Creating Profile..." : "Submit"}
             </button>
           )}
         </div>

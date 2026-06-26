@@ -1,10 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { useTranslation, Trans } from "react-i18next";
-import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 
 function Intro() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   return (
     <div className="w-screen min-h-screen max-h-screen overflow-y-auto bg-uni-bg text-uni-text font-sans uni-scroll">
@@ -31,29 +28,28 @@ function Intro() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm text-uni-muted">
             <a href="#features" className="hover:text-uni-text transition-colors">
-              {t("nav.features")}
+              {"Features"}
             </a>
             <a
               href="#how-it-works"
               className="hover:text-uni-text transition-colors"
             >
-              {t("nav.howItWorks")}
+              {"How it works"}
             </a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher />
             <button
               onClick={() => navigate("/login")}
               className="hidden sm:block px-4 py-2 text-sm font-medium text-uni-muted hover:text-uni-text transition-colors"
             >
-              {t("nav.login")}
+              {"Log in"}
             </button>
             <button
               onClick={() => navigate("/register")}
               className="px-3 sm:px-4 py-2 text-sm font-bold text-uni-on-accent rounded-lg bg-brand shadow-bubble hover:shadow-glow transition-all whitespace-nowrap"
             >
-              {t("nav.getStarted")}
+              {"Get started"}
             </button>
           </div>
         </div>
@@ -63,22 +59,19 @@ function Intro() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24 pb-20 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-uni-surface border border-uni-border text-xs font-medium text-uni-muted mb-6">
           <CrossIcon className="w-3.5 h-3.5 text-uni-gold" />
-          {t("intro.badge")}
+          {"Faith-based togetherness · now in beta"}
         </div>
 
         <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] max-w-4xl mx-auto">
-          <Trans
-            i18nKey="intro.heroTitle"
-            components={{
-              grad: (
-                <span className="bg-brand bg-clip-text text-transparent" />
-              ),
-            }}
-          />
+          Pray together,{" "}
+          <span className="bg-brand bg-clip-text text-transparent">
+            wherever you are
+          </span>
+          .
         </h1>
 
         <p className="mt-6 text-lg sm:text-xl text-uni-muted max-w-2xl mx-auto leading-relaxed">
-          {t("intro.heroSubtitle")}
+          {"2Gather brings prayer, Scripture, and encouragement into one warm space — real-time prayer chat, a themed Bible verse for each day, and modes for whatever you're walking through."}
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -86,13 +79,13 @@ function Intro() {
             onClick={() => navigate("/register")}
             className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-uni-on-accent rounded-xl bg-brand shadow-bubble hover:shadow-glow transition-all"
           >
-            {t("intro.startFree")}
+            {"Start praying free"}
           </button>
           <button
             onClick={() => navigate("/login")}
             className="w-full sm:w-auto px-6 py-3 text-sm font-semibold text-uni-text rounded-xl bg-uni-surface border border-uni-border hover:border-uni-gold/50 hover:bg-uni-surface2 transition-colors"
           >
-            {t("intro.haveAccount")}
+            {"I have an account"}
           </button>
         </div>
 
@@ -102,10 +95,10 @@ function Intro() {
             <div className="flex items-center gap-2 px-4 py-3 border-b border-uni-border">
               <span className="w-2 h-2 rounded-full bg-uni-gold animate-pulse-dot" />
               <span className="text-xs font-semibold text-uni-text">
-                {t("intro.previewRoom")}
+                {"Prayer room"}
               </span>
               <span className="ml-auto text-[11px] text-uni-muted">
-                {t("intro.previewMode")}
+                {"Recovery mode"}
               </span>
             </div>
             <div className="p-5 sm:p-6 space-y-3 text-left">
@@ -114,14 +107,14 @@ function Intro() {
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-uni-gold" />
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-uni-gold">
-                    {t("intro.previewVerseLabel")}
+                    {"Verse of the day"}
                   </span>
                 </div>
                 <p className="text-sm leading-relaxed text-uni-text">
-                  “{t("intro.previewVerseText")}”
+                  “{"Come to me, all you who labor and are heavily burdened, and I will give you rest."}”
                 </p>
                 <p className="mt-1 text-xs text-uni-muted">
-                  — {t("intro.previewVerseRef")}{" "}
+                  — {"Matthew 11:28"}{" "}
                   <span className="opacity-60">(WEB)</span>
                 </p>
               </div>
@@ -129,7 +122,7 @@ function Intro() {
               {/* Prayer request from a friend */}
               <div className="flex justify-start">
                 <div className="max-w-[78%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-uni-surface2 border border-uni-border text-sm text-uni-text">
-                  {t("intro.previewMsgIn")}
+                  {"Resting after a long week 🙏 could you pray for some peace?"}
                 </div>
               </div>
 
@@ -138,10 +131,10 @@ function Intro() {
                 <div className="max-w-[78%] flex flex-col items-end">
                   <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-uni-gold">
                     <span className="w-1.5 h-1.5 rounded-full bg-uni-gold" />
-                    {t("intro.previewPrayerLabel")}
+                    {"Prayer"}
                   </span>
                   <div className="px-4 py-2.5 rounded-2xl rounded-br-md bg-brand text-uni-on-accent font-medium text-sm shadow-bubble ring-1 ring-uni-gold/30">
-                    {t("intro.previewMsgPrayer")}
+                    {"Lord, quiet their mind and restore their strength. Give them true rest. Amen."}
                   </div>
                 </div>
               </div>
@@ -154,27 +147,27 @@ function Intro() {
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            {t("intro.featuresTitle")}
+            {"Everything you need to pray together"}
           </h2>
           <p className="mt-3 text-uni-muted max-w-xl mx-auto">
-            {t("intro.featuresSubtitle")}
+            {"Warm, reverent, and built for real life — in your language and theirs."}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <FeatureCard
-            title={t("intro.feature1Title")}
-            description={t("intro.feature1Desc")}
+            title={"Real-time prayer chat"}
+            description={"Share a request and pray together the moment it matters — send a prayer, not just a message."}
             icon={<HeartIcon />}
           />
           <FeatureCard
-            title={t("intro.feature2Title")}
-            description={t("intro.feature2Desc")}
+            title={"A verse for every day"}
+            description={"A curated, attributed Bible verse each day (World English Bible), themed to what you're carrying."}
             icon={<BookIcon />}
           />
           <FeatureCard
-            title={t("intro.feature3Title")}
-            description={t("intro.feature3Desc")}
+            title={"Modes for real life"}
+            description={"Travel, Interview, Pitch, Promotion, Recovery — each reshapes your verses, prayers, and gentle nudges."}
             icon={<CompassIcon />}
           />
         </div>
@@ -184,27 +177,27 @@ function Intro() {
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            {t("intro.howTitle")}
+            {"How 2Gather works"}
           </h2>
           <p className="mt-3 text-uni-muted max-w-xl mx-auto">
-            {t("intro.howSubtitle")}
+            {"Three steps to praying together."}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <StepCard
             n="01"
-            title={t("intro.step1Title")}
-            body={t("intro.step1Body")}
+            title={"Create your space"}
+            body={"Sign up, set your name, and choose a mode for whatever you're walking through."}
           />
           <StepCard
             n="02"
-            title={t("intro.step2Title")}
-            body={t("intro.step2Body")}
+            title={"Pray in real time"}
+            body={"Send prayers and Scripture in a warm, focused chat — together, even when you're apart."}
           />
           <StepCard
             n="03"
-            title={t("intro.step3Title")}
-            body={t("intro.step3Body")}
+            title={"Carry it with you"}
+            body={"Save what speaks to you in your journal, and get a gentle daily verse nudge."}
           />
         </div>
       </section>
@@ -214,23 +207,23 @@ function Intro() {
         <div className="rounded-3xl border border-uni-gold/20 bg-brand-soft p-10 md:p-14 text-center">
           <CrossIcon className="w-7 h-7 text-uni-gold mx-auto mb-4" />
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            {t("intro.ctaTitle")}
+            {"Ready to gather in prayer?"}
           </h2>
           <p className="mt-3 text-uni-muted max-w-lg mx-auto">
-            {t("intro.ctaSubtitle")}
+            {"Join 2Gather and bring faith, friends, and Scripture into one place."}
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => navigate("/register")}
               className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-uni-on-accent rounded-xl bg-brand shadow-bubble hover:shadow-glow transition-all"
             >
-              {t("intro.createAccount")}
+              {"Create account"}
             </button>
             <button
               onClick={() => navigate("/login")}
               className="w-full sm:w-auto px-6 py-3 text-sm font-semibold text-uni-text rounded-xl bg-uni-surface border border-uni-border hover:border-uni-gold/50 hover:bg-uni-surface2 transition-colors"
             >
-              {t("intro.startChatting")}
+              {"Start praying"}
             </button>
           </div>
         </div>
@@ -249,13 +242,13 @@ function Intro() {
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:text-uni-text transition-colors">
-              {t("intro.footerPrivacy")}
+              {"Privacy"}
             </a>
             <a href="#" className="hover:text-uni-text transition-colors">
-              {t("intro.footerTerms")}
+              {"Terms"}
             </a>
             <a href="#" className="hover:text-uni-text transition-colors">
-              {t("intro.footerContact")}
+              {"Contact"}
             </a>
           </div>
         </div>
@@ -277,11 +270,10 @@ const FeatureCard = ({ icon, title, description }) => (
 );
 
 const StepCard = ({ n, title, body }) => {
-  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl border border-uni-border bg-uni-surface hover:border-uni-gold/30 transition-colors">
       <span className="font-display text-xs font-bold tracking-widest text-uni-gold">
-        {t("intro.step")} {n}
+        {"STEP"} {n}
       </span>
       <h3 className="mt-2 text-lg font-semibold text-uni-text">{title}</h3>
       <p className="mt-1.5 text-sm text-uni-muted leading-relaxed">{body}</p>

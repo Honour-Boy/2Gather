@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   collection,
   doc,
@@ -12,11 +11,10 @@ import { db } from "@/lib/firebase";
 import useChatStore from "@/store/chatStore";
 import useUserStore from "@/store/userStore";
 import EmojiPicker from "emoji-picker-react";
-import languages from "@/components/common/Languages";
 import { isUserOnline } from "@/hooks/usePresence";
 import { sendChatMessage } from "@/services/messages";
 import MessageBubble from "@/components/chat/MessageBubble";
-import { SendIcon, EmojiIcon, Arrow } from "@/components/ui/icons";
+import { SendIcon, EmojiIcon } from "@/components/ui/icons";
 import Avatar from "@/components/ui/Avatar";
 import PrayerTemplates from "@/components/chat/PrayerTemplates";
 import VersePicker from "@/components/chat/VersePicker";
@@ -31,7 +29,6 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
   const [liveUser, setLiveUser] = useState(null);
-  const [liveCurrentUser, setLiveCurrentUser] = useState(null);
   const [text, setText] = useState("");
   const [sendError, setSendError] = useState(null);
   const [sendErrorKind, setSendErrorKind] = useState(null);
@@ -39,12 +36,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   // so the sent message is tagged kind: "prayer" (styled in MessageBubble).
   const [pendingKind, setPendingKind] = useState(null);
   const [openEmoji, setOpenEmoji] = useState(false);
-  const [expandedOriginals, setExpandedOriginals] = useState({});
 
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, resetChat } =
     useChatStore();
-  const { t } = useTranslation();
   const { activeMode } = useModeStore();
   const modeTheme = themeForMode(activeMode);
   const endRef = useRef(null);
@@ -72,7 +67,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   // Messages live in the chats/{chatId}/messages subcollection. We subscribe to
   // the most recent `pageSize` (orderBy desc + limit) and render them ascending,
   // so a long history isn't re-downloaded in full on every snapshot. "Load
-  // older" grows the window. (Replaces the old single growing array.)
+  // older" grows the window.
   useEffect(() => {
     if (!chatId) {
       setMessages([]);
@@ -92,9 +87,8 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
 
   const loadOlder = () => setPageSize((n) => n + PAGE_SIZE);
 
-  // Subscribe to recipient for dynamic presence — and a live language, so when
-  // the other user changes their language the indicator + translate target
-  // follow it (the chatStore `user` is a stale snapshot taken at changeChat).
+  // Subscribe to the recipient's user doc for live presence (the chatStore
+  // `user` is a stale snapshot taken at changeChat).
   useEffect(() => {
     if (!user?.id) return;
     const unsub = onSnapshot(doc(db, "users", user.id), (snap) => {
@@ -103,68 +97,25 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
     return () => unsub();
   }, [user?.id]);
 
-  // Subscribe to the current user too: their stored `currentUser` (userStore) is
-  // a one-time getDoc, so without this a change to their own language wouldn't
-  // update the source indicator or the language messages are sent in.
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    const unsub = onSnapshot(doc(db, "users", currentUser.id), (snap) => {
-      if (snap.exists())
-        setLiveCurrentUser({ ...snap.data(), id: currentUser.id });
-    });
-    return () => unsub();
-  }, [currentUser?.id]);
-
-  // Re-render periodically so "lastSeen" staleness updates without new writes
+  // Re-render periodically so "lastSeen" staleness updates without new writes.
   const [, setTick] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setTick((v) => v + 1), 30000);
-    return () => clearInterval(t);
+    const id = setInterval(() => setTick((v) => v + 1), 30000);
+    return () => clearInterval(id);
   }, []);
 
   const online = isUserOnline(liveUser);
-
-  // Prefer the live docs (which track language changes in real time) and fall
-  // back to the store snapshots until the first snapshot lands.
-  const effectiveCurrentUser = liveCurrentUser || currentUser;
   const effectiveReceiver = liveUser || user;
-
-  const currentUserLang = languages.find(
-    (lang) => lang.value === effectiveCurrentUser?.language
-  );
-  const userLang = languages.find(
-    (lang) => lang.value === effectiveReceiver?.language
-  );
-
-  const sourceCode = currentUserLang?.value?.toUpperCase() || "EN";
-  const targetCode = userLang?.value?.toUpperCase() || "EN";
-  const targetLabel = userLang?.label || "English";
-  const sourceLabel = currentUserLang?.label || "English";
-
-  // Resolve a message's stored source language (the *sender's* language) to a
-  // human label so the "translated from …" label is correct regardless of who
-  // is viewing. Falls back to the viewer-derived label for legacy messages that
-  // predate the stored sourceLang field.
-  const labelForLang = (code) =>
-    languages.find((l) => l.value === code)?.label;
+  const firstName = user?.fullName?.split(" ")[0] || "your friend";
 
   // Fire-and-forget: the message persists first and shows up via the live
-  // subcollection snapshot, so we don't block the UI on the network. Translation
-  // patches in afterward (best-effort). Only a genuine persist failure surfaces
-  // (the retry affordance below).
+  // subcollection snapshot, so we don't block the UI on the network. Only a
+  // genuine persist failure surfaces (the retry affordance below).
   const doSend = async (messageText, kind) => {
     if (!messageText || !chatId) return;
     setSendError(null);
     try {
-      await sendChatMessage({
-        chatId,
-        currentUser,
-        receiver: user,
-        text: messageText,
-        sourceLang: currentUserLang?.value || "en",
-        targetLang: userLang?.value || "en",
-        kind,
-      });
+      await sendChatMessage({ chatId, currentUser, text: messageText, kind });
     } catch (err) {
       console.log(err);
       setSendError(messageText);
@@ -189,10 +140,6 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
     if (!isReceiverBlocked) setText((prev) => prev + e.emoji);
   };
 
-  const toggleOriginal = (key) => {
-    setExpandedOriginals((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const disabled = isCurrentUserBlocked || isReceiverBlocked;
 
   return (
@@ -204,7 +151,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
         <button
           onClick={resetChat}
           className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors shrink-0"
-          aria-label={t("chat.backToList")}
+          aria-label={"Back to chats"}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5" />
@@ -229,7 +176,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
           />
           <div className="flex flex-col leading-tight min-w-0">
             <span className="text-sm md:text-base font-semibold text-uni-text truncate">
-              {user?.fullName || t("chat.selectChat")}
+              {user?.fullName || "Select a chat"}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-uni-muted">
               <span
@@ -237,15 +184,15 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                   online ? "bg-uni-online animate-pulse-dot" : "bg-uni-muted/50"
                 }`}
               />
-              {online ? t("common.online") : t("common.offline")}
+              {online ? "Online" : "Offline"}
             </span>
           </div>
         </button>
         <button
           onClick={onHeaderClick}
           className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          title={detailOpen ? t("chat.closeProfile") : t("chat.viewProfile")}
-          aria-label={t("chat.viewProfile")}
+          title={detailOpen ? "Close profile" : "View profile"}
+          aria-label={"View profile"}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -269,18 +216,15 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
       <div className="flex-1 overflow-y-auto uni-scroll px-3 md:px-8 py-4 md:py-6 space-y-3">
         {messages.length === 0 && (
           <div className="h-full min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
-            <div className="w-16 h-16 rounded-2xl bg-brand-soft border border-uni-lime/20 flex items-center justify-center mb-4 text-3xl">
-              🌍
+            <div className="w-16 h-16 rounded-2xl bg-brand-soft border border-uni-gold/20 flex items-center justify-center mb-4 text-3xl">
+              🙏
             </div>
             <p className="text-lg font-semibold text-uni-text">
-              {t("chat.emptyTitle")}
+              Start praying together
             </p>
             <p className="text-sm text-uni-muted mt-1 max-w-xs">
-              {t("chat.emptyBody", {
-                source: sourceLabel,
-                name: user?.fullName?.split(" ")[0] || t("chat.yourContact"),
-                target: targetLabel,
-              })}
+              Send a message, share a verse, or open with a prayer for{" "}
+              {firstName}.
             </p>
           </div>
         )}
@@ -291,36 +235,29 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               onClick={loadOlder}
               className="text-xs font-medium text-uni-muted hover:text-uni-text bg-uni-surface border border-uni-border rounded-full px-4 py-1.5 transition-colors"
             >
-              {t("chat.loadOlder")}
+              Load older messages
             </button>
           </div>
         )}
 
-        {messages.map((message) => {
-          const key = message.id;
-          return (
-            <MessageBubble
-              key={key}
-              message={message}
-              isMine={message.senderId === currentUser?.id}
-              showOriginal={!!expandedOriginals[key]}
-              targetLabel={targetLabel}
-              sourceLabel={labelForLang(message.sourceLang) || sourceLabel}
-              onToggleOriginal={() => toggleOriginal(key)}
-            />
-          );
-        })}
+        {messages.map((message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            isMine={message.senderId === currentUser?.id}
+          />
+        ))}
 
         {/* Error state with retry (only on a genuine send/persist failure) */}
         {sendError && (
           <div className="flex justify-end animate-fade-in-up">
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
-              <span>{t("chat.sendFailed")}</span>
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 text-xs">
+              <span>Couldn&apos;t send your message.</span>
               <button
                 onClick={handleRetry}
-                className="font-semibold text-uni-text bg-red-500/80 hover:bg-red-500 px-2.5 py-1 rounded-md transition-colors"
+                className="font-semibold text-white bg-red-500/90 hover:bg-red-500 px-2.5 py-1 rounded-md transition-colors"
               >
-                {t("chat.retry")}
+                Retry
               </button>
             </div>
           </div>
@@ -332,20 +269,13 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
       {/* Input bar */}
       <div className="border-t border-uni-border bg-uni-bg px-3 md:px-6 py-3 md:py-4">
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Language indicator */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full bg-uni-surface border border-uni-border text-[11px] font-semibold text-uni-muted">
-            <span className="text-uni-text">{sourceCode}</span>
-            <Arrow />
-            <span className="text-uni-cyan">{targetCode}</span>
-          </div>
-
-          <div className="flex-1 flex items-center gap-2 bg-uni-surface border border-uni-border rounded-full pl-4 pr-2 py-1.5 focus-within:border-uni-lime/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
+          <div className="flex-1 flex items-center gap-2 bg-uni-surface border border-uni-border rounded-full pl-4 pr-2 py-1.5 focus-within:border-uni-gold/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
             <input
               type="text"
               placeholder={
-                disabled ? t("chat.cannotSend") : t("chat.messagePlaceholder")
+                disabled ? "You cannot send a message" : "Type your message…"
               }
-              aria-label={t("chat.messagePlaceholder")}
+              aria-label={"Type your message…"}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
@@ -389,7 +319,7 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 type="button"
                 onClick={() => !isReceiverBlocked && setOpenEmoji((p) => !p)}
                 className="p-1.5 rounded-full text-uni-muted hover:text-uni-text hover:bg-black/5 transition-colors"
-                aria-label={t("chat.emoji")}
+                aria-label={"Emoji"}
               >
                 <EmojiIcon />
               </button>
@@ -408,19 +338,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               onClick={handleSend}
               disabled={disabled || !text.trim()}
               className="flex items-center justify-center w-10 h-10 shrink-0 rounded-full bg-brand text-uni-on-accent shadow-bubble hover:shadow-glow disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              aria-label={t("chat.send")}
+              aria-label={"Send"}
             >
               <SendIcon />
             </button>
-          </div>
-        </div>
-
-        {/* Mobile language indicator */}
-        <div className="sm:hidden mt-2 flex justify-center">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-uni-surface border border-uni-border text-[10px] font-semibold text-uni-muted">
-            <span className="text-uni-text">{sourceCode}</span>
-            <Arrow />
-            <span className="text-uni-cyan">{targetCode}</span>
           </div>
         </div>
       </div>

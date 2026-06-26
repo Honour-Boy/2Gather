@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import LogoutNow from "./LogoutNow";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   return (
     <nav className="hidden md:flex w-16 lg:w-20 h-screen flex-col items-center justify-between bg-uni-bg border-r border-uni-border py-5">
       <div className="flex flex-col items-center gap-6">
@@ -14,7 +12,7 @@ const Navbar = () => {
           <span className="text-uni-on-accent font-display font-bold text-lg">U</span>
         </div>
 
-        <NavIcon label={t("navbar.chats")} active onClick={() => navigate("/chat")}>
+        <NavIcon label={"Chats"} active onClick={() => navigate("/chat")}>
           <svg
             width="20"
             height="20"
@@ -29,7 +27,7 @@ const Navbar = () => {
           </svg>
         </NavIcon>
 
-        <NavIcon label={t("navbar.profile")} onClick={() => navigate("/settings")}>
+        <NavIcon label={"Profile"} onClick={() => navigate("/settings")}>
           <svg
             width="20"
             height="20"
@@ -45,7 +43,7 @@ const Navbar = () => {
           </svg>
         </NavIcon>
 
-        <NavIcon label={t("navbar.journal", "Journal")} onClick={() => navigate("/journal")}>
+        <NavIcon label={"Journal"} onClick={() => navigate("/journal")}>
           <svg
             width="20"
             height="20"

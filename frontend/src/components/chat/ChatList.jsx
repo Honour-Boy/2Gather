@@ -1,5 +1,4 @@
 ﻿import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import useUserStore from "@/store/userStore";
 import {
   doc,
@@ -36,7 +35,6 @@ const ChatList = () => {
   const [isLoading, setIsLoading] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const { t } = useTranslation();
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -132,7 +130,7 @@ const ChatList = () => {
       } else {
         setUser(null);
         setIsLoading(null);
-        setError(t("chatList.userNotFound"));
+        setError("The username above was not found.");
       }
     } catch (err) {
       console.log(err);
@@ -144,11 +142,11 @@ const ChatList = () => {
 
     // Check if the user is trying to add themselves
     if (userToAdd.id === currentUser.id) {
-      setToast(t("chatList.cannotAddSelf"));
+      setToast("You cannot add yourself to the chat list.");
       return;
     }
     setIsAdding(true);
-    setToast(t("chatList.addingUser"));
+    setToast("Adding user to chat list...");
     try {
       // Prevent duplicates: is there already an index entry for this partner?
       // (The index is owner-readable; this is a read, not a write.)
@@ -160,7 +158,7 @@ const ChatList = () => {
         )
       );
       if (!existing.empty) {
-        setToast(t("chatList.alreadyInList"));
+        setToast("User is already in your chat list.");
         setIsAdding(false);
         return;
       }
@@ -176,7 +174,7 @@ const ChatList = () => {
       });
       await syncUserchats(chatRef.id);
 
-      setToast(t("chatList.userAdded"));
+      setToast("User added successfully!");
       setUser(null); // Reset the user state after adding
     } catch (err) {
       console.log(err); // Log any errors
@@ -209,15 +207,15 @@ const ChatList = () => {
           <button
             type="button"
             onClick={handleSearch}
-            aria-label={t("chatList.search", "Search")}
+            aria-label={"Search"}
             className="shrink-0 flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
           >
             <img src={searchIcon} alt="" className="w-4 h-4" />
           </button>
           <input
             type="text"
-            placeholder={t("chatList.searchPlaceholder")}
-            aria-label={t("chatList.searchPlaceholder")}
+            placeholder={"Search conversations"}
+            aria-label={"Search conversations"}
             className="bg-transparent border-none outline-none text-sm text-uni-text placeholder:text-uni-muted w-full flex-1"
             onChange={(e) => {
               setInput(e.target.value);
@@ -241,7 +239,7 @@ const ChatList = () => {
           <button
             type="button"
             onClick={() => handleAdd(user)}
-            aria-label={t("chatList.addUser", "Add user")}
+            aria-label={"Add user"}
             className="shrink-0 flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
           >
             <img src={plusIcon} alt="" className="w-5 h-5" />
@@ -251,7 +249,7 @@ const ChatList = () => {
       {suggestions.length > 0 && (
         <div className="mt-4 w-full flex flex-col">
           <h3 className="text-xs font-semibold text-uni-muted text-left uppercase tracking-wider px-1">
-            {t("chatList.suggestions")}
+            {"Suggestions"}
           </h3>
           <div className="w-full mt-2 overflow-x-auto scrollbar-hide">
             <div className="w-max flex flex-row gap-2 pb-1">
@@ -272,7 +270,7 @@ const ChatList = () => {
         </div>
       )}
       <h3 className="mt-4 text-xs font-semibold text-uni-muted uppercase tracking-wider px-1 self-start">
-        {t("chatList.chats")}
+        {"Chats"}
       </h3>
       {loadingChats ? (
         <div className="w-full flex flex-col gap-0.5 mt-1">
@@ -291,11 +289,11 @@ const ChatList = () => {
         </div>
       ) : chats.length === 0 ? (
         <p className="text-uni-muted text-sm text-center w-full py-6">
-          {t("chatList.noChatsYet")}
+          {"No conversations yet — search a username above or pick a suggestion to start chatting."}
         </p>
       ) : filteredChats.length === 0 ? (
         <p className="text-uni-muted text-sm text-center w-full py-6">
-          {t("chatList.noMatches")}
+          {"No conversations match your search."}
         </p>
       ) : null}
       <div className="w-full flex flex-col gap-0.5 mt-1">
@@ -322,7 +320,7 @@ const ChatList = () => {
                 translate="no"
               >
                 {chat.user?.blocked?.includes(currentUser?.id)
-                  ? t("chatList.blocked")
+                  ? "Blocked"
                   : chat.lastSenderId === currentUser?.id
                   ? truncateMessage(chat.lastMessage || "")
                   : truncateMessage(chat.lastTranslatedMessage || "")}

@@ -9,17 +9,14 @@ import {
 import useChatStore from "@/store/chatStore";
 import { db } from "@/lib/firebase";
 import useUserStore from "@/store/userStore";
-import languages from "@/components/common/Languages";
 import { isUserOnline } from "@/hooks/usePresence";
 import { format } from "timeago.js";
-import { useTranslation } from "react-i18next";
 import Avatar from "@/components/ui/Avatar";
 
 const Detail = ({ onClose }) => {
   const { user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
     useChatStore();
   const { currentUser } = useUserStore();
-  const { t } = useTranslation();
   const [liveUser, setLiveUser] = useState(user);
 
   useEffect(() => {
@@ -44,21 +41,16 @@ const Detail = ({ onClose }) => {
     }
   };
 
-  const langLabel =
-    languages.find((l) => l.value === user?.language)?.label || t("common.dash");
-
   const lastSeenText = (() => {
     const ls = liveUser?.lastSeen;
-    if (!ls) return t("common.offline");
+    if (!ls) return "Offline";
     const ts =
       typeof ls?.toMillis === "function"
         ? ls.toMillis()
         : ls?.seconds
         ? ls.seconds * 1000
         : null;
-    return ts
-      ? t("common.lastSeen", { time: format(new Date(ts)) })
-      : t("common.offline");
+    return ts ? `Last seen ${format(new Date(ts))}` : "Offline";
   })();
 
   return (
@@ -66,12 +58,12 @@ const Detail = ({ onClose }) => {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-uni-border">
         <h3 className="text-sm font-semibold text-uni-muted uppercase tracking-wider">
-          {t("detail.profile")}
+          {"Profile"}
         </h3>
         <button
           onClick={onClose}
           className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          aria-label={t("common.close")}
+          aria-label={"Close"}
         >
           <svg
             width="18"
@@ -101,23 +93,22 @@ const Detail = ({ onClose }) => {
             }`}
           />
           <span className={online ? "text-uni-online" : "text-uni-muted"}>
-            {online ? t("common.online") : lastSeenText}
+            {online ? "Online" : lastSeenText}
           </span>
         </div>
       </div>
 
       {/* Info */}
       <div className="flex-1 overflow-y-auto uni-scroll px-6 py-5 space-y-4">
-        <InfoRow label={t("common.email")} value={user?.email} />
-        <InfoRow label={t("common.language")} value={langLabel} />
-        <InfoRow label={t("common.jobTitle")} value={user?.jobTitle || t("common.dash")} />
-        <InfoRow label={t("common.organization")} value={user?.organization || t("common.dash")} />
+        <InfoRow label={"Email"} value={user?.email} />
+        <InfoRow label={"Job Title"} value={user?.jobTitle || "—"} />
+        <InfoRow label={"Organization"} value={user?.organization || "—"} />
         <div>
           <p className="text-xs font-semibold text-uni-muted uppercase tracking-wider mb-1">
-            {t("common.bio")}
+            {"Bio"}
           </p>
           <p className="text-sm text-uni-text leading-relaxed" translate="no">
-            {user?.bio || t("detail.noBio")}
+            {user?.bio || "No bio yet."}
           </p>
         </div>
       </div>
@@ -134,10 +125,10 @@ const Detail = ({ onClose }) => {
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {isCurrentUserBlocked
-            ? t("detail.youAreBlocked")
+            ? "You are blocked"
             : isReceiverBlocked
-            ? t("detail.unblockUser")
-            : t("detail.blockUser")}
+            ? "Unblock user"
+            : "Block user"}
         </button>
       </div>
     </div>

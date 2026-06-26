@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
   collection,
   doc,
@@ -13,27 +12,21 @@ import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
 import { db } from "@/lib/firebase";
 import useUserStore from "@/store/userStore";
-import { UI_LANGUAGES, setUiLanguage } from "@/lib/i18n";
-import { supportedLanguages } from "@/components/common/Languages";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 import Avatar from "@/components/ui/Avatar";
 import { enableNotifications } from "@/lib/messaging";
 import { VERSE_THEMES } from "@/lib/modes";
 
-// In-app profile editing (ROADMAP Phase 2). Pre-fills from the signed-in user's
-// `users/{uid}` doc and writes edits back. Username keeps its "@"-prefix +
-// uniqueness rule (only re-checked when it actually changes). Changing the
-// language re-flows future translations automatically — Chat.jsx reads both
-// parties' languages live, so new messages translate to the new language with
-// no further action (older messages keep the translation they were sent with).
-// Avatar images are stored as a small base64 JPEG data URL on the user doc
-// (`avatarUrl`) — no Firebase Storage / paid bucket needed. The picker below
-// center-crops + downscales to a 128px thumbnail (~10-30 KB) so it stays well
-// within Firestore's 1 MiB doc limit and doesn't bloat the frequently-read doc.
+// In-app profile editing. Pre-fills from the signed-in user's `users/{uid}` doc
+// and writes edits back. Username keeps its "@"-prefix + uniqueness rule (only
+// re-checked when it actually changes). Avatar images are stored as a small
+// base64 JPEG data URL on the user doc (`avatarUrl`) — no Firebase Storage /
+// paid bucket needed. The picker below center-crops + downscales to a 128px
+// thumbnail (~10-30 KB) so it stays well within Firestore's 1 MiB doc limit and
+// doesn't bloat the frequently-read doc.
 const FIELDS = [
   "fullName",
   "username",
-  "language",
   "bio",
   "dob",
   "gender",
@@ -56,19 +49,19 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const fmtHour = (h) => `${String(h).padStart(2, "0")}:00`;
 
 // Read an image file, center-crop to a square, downscale to AVATAR_DIM, and
-// return a base64 JPEG data URL. Rejects with an i18n key (resolved by the
-// caller via t()) for non-images / unreadable files.
+// return a base64 JPEG data URL. Rejects with a plain English message for
+// non-images / unreadable files.
 const fileToAvatarDataUrl = (file) =>
   new Promise((resolve, reject) => {
     if (!file.type?.startsWith("image/")) {
-      reject(new Error("settings.errNotImage"));
+      reject(new Error("Please choose an image file."));
       return;
     }
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("settings.errUnreadable"));
+    reader.onerror = () => reject(new Error("Couldn't read that file."));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error("settings.errImageLoad"));
+      img.onerror = () => reject(new Error("That image couldn't be loaded."));
       img.onload = () => {
         const side = Math.min(img.width, img.height);
         const sx = (img.width - side) / 2;
@@ -90,7 +83,6 @@ const inputCls =
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { currentUser, fetchUserInfo } = useUserStore();
 
   const [form, setForm] = useState(null);
@@ -140,7 +132,7 @@ const Settings = () => {
     } catch (err) {
       setErrors((er) => ({
         ...er,
-        avatar: t(err.message || "settings.imageError"),
+        avatar: err.message || "Couldn't use that image.",
       }));
     }
   };
@@ -155,9 +147,9 @@ const Settings = () => {
     try {
       await enableNotifications(currentUser.id);
       await fetchUserInfo(currentUser.id);
-      notify.success(t("settings.notifEnabled", "Notifications enabled on this device."));
+      notify.success("Notifications enabled on this device.");
     } catch (err) {
-      notify.error(err.message || t("settings.notifFailed", "Couldn't enable notifications."));
+      notify.error(err.message || "Couldn't enable notifications.");
     } finally {
       setNotifBusy(false);
     }
@@ -179,11 +171,10 @@ const Settings = () => {
 
   const validate = () => {
     const e = {};
-    if (!form.fullName.trim()) e.fullName = t("settings.nameRequired");
+    if (!form.fullName.trim()) e.fullName = "Name is required.";
     const username = form.username.trim();
-    if (!username) e.username = t("settings.usernameRequired");
-    else if (!username.startsWith("@")) e.username = t("settings.usernameAt");
-    if (!form.language) e.language = t("settings.pickLanguage");
+    if (!username) e.username = "Username is required.";
+    else if (!username.startsWith("@")) e.username = "Username must start with \"@\".";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -202,7 +193,7 @@ const Settings = () => {
         );
         const takenByOther = snap.docs.some((d) => d.id !== currentUser.id);
         if (takenByOther) {
-          setErrors((e) => ({ ...e, username: t("settings.usernameTaken") }));
+          setErrors((e) => ({ ...e, username: "That username is taken." }));
           setSaving(false);
           return;
         }
@@ -218,16 +209,11 @@ const Settings = () => {
       // Refresh the store so the rest of the app reflects the edits immediately.
       await fetchUserInfo(currentUser.id);
 
-      // Apply the UI language now — and only now, on submit (not live as the
-      // user browses the dropdown). Settings + the landing switcher are the only
-      // places that change the interface language (owner request, 2026-06-04).
-      if (UI_LANGUAGES.includes(form.language)) setUiLanguage(form.language);
-
-      notify.success(t("settings.updated"));
+      notify.success("Profile updated.");
       setTimeout(() => navigate("/chat"), 800);
     } catch (err) {
       console.error("Profile update failed:", err);
-      notify.error(t("settings.saveFailed"));
+      notify.error("Couldn't save your profile. Please try again.");
       setSaving(false);
     }
   };
@@ -241,14 +227,14 @@ const Settings = () => {
         <button
           onClick={() => navigate("/chat")}
           className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          aria-label={t("settings.backToChat")}
+          aria-label={"Back to chat"}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5" />
             <path d="m12 19-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-base md:text-lg font-semibold text-uni-text">{t("settings.editProfile")}</h1>
+        <h1 className="text-base md:text-lg font-semibold text-uni-text">{"Edit profile"}</h1>
       </div>
 
       <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-8">
@@ -262,14 +248,14 @@ const Settings = () => {
             />
             <label
               className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-uni-surface2 border border-uni-border flex items-center justify-center cursor-pointer hover:border-uni-lime/60 transition-colors"
-              title={t("settings.changePhoto")}
+              title={"Change photo"}
             >
               <input
                 type="file"
                 accept="image/*"
                 className="hidden"
                 onChange={handleAvatarPick}
-                aria-label={t("settings.changePhoto")}
+                aria-label={"Change photo"}
               />
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -279,7 +265,7 @@ const Settings = () => {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-uni-text truncate">
-              {form.fullName || t("settings.yourName")}
+              {form.fullName || "Your name"}
             </p>
             <p className="text-xs text-uni-muted truncate">{currentUser.email}</p>
             {form.avatarUrl && (
@@ -288,7 +274,7 @@ const Settings = () => {
                 onClick={removeAvatar}
                 className="mt-1 text-xs text-uni-muted hover:text-red-400 transition-colors"
               >
-                {t("settings.removePhoto")}
+                {"Remove photo"}
               </button>
             )}
             {errors.avatar && (
@@ -298,69 +284,49 @@ const Settings = () => {
         </section>
 
         {/* Identity */}
-        <Section title={t("settings.identity")}>
-          <Field label={t("settings.fullName")} error={errors.fullName}>
-            <input type="text" value={form.fullName} onChange={set("fullName")} className={inputCls} placeholder={t("settings.yourName")} />
+        <Section title={"Identity"}>
+          <Field label={"Full name"} error={errors.fullName}>
+            <input type="text" value={form.fullName} onChange={set("fullName")} className={inputCls} placeholder={"Your name"} />
           </Field>
-          <Field label={t("settings.username")} error={errors.username} hint={t("settings.usernameHint")}>
-            <input type="text" value={form.username} onChange={set("username")} className={inputCls} placeholder={t("settings.usernamePlaceholder")} />
+          <Field label={"Username"} error={errors.username} hint={"Starts with @, unique across 2Gather."}>
+            <input type="text" value={form.username} onChange={set("username")} className={inputCls} placeholder={"@username"} />
           </Field>
-          <Field label={t("common.email")} hint={t("settings.emailHint")}>
+          <Field label={"Email"} hint={"Managed by your sign-in; can't be edited here."}>
             <input type="email" value={currentUser.email || ""} disabled className={`${inputCls} opacity-60 cursor-not-allowed`} />
           </Field>
         </Section>
 
-        {/* Language */}
-        <Section title={t("settings.languageSection")}>
-          <Field
-            label={t("settings.preferredLanguage")}
-            error={errors.language}
-            hint={t("settings.languageHint")}
-          >
-            <select value={form.language} onChange={set("language")} className={inputCls}>
-              <option value="">{t("common.selectLanguage")}</option>
-              {supportedLanguages.map((l) => (
-                <option key={l.value} value={l.value}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </Section>
-
         {/* About */}
-        <Section title={t("settings.about")}>
-          <Field label={t("common.bio")}>
-            <textarea value={form.bio} onChange={set("bio")} rows={3} className={`${inputCls} resize-none`} placeholder={t("settings.bioPlaceholder")} />
+        <Section title={"About"}>
+          <Field label={"Bio"}>
+            <textarea value={form.bio} onChange={set("bio")} rows={3} className={`${inputCls} resize-none`} placeholder={"A short bio"} />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label={t("settings.dob")}>
+            <Field label={"Date of birth"}>
               <input type="date" value={form.dob} onChange={set("dob")} className={`${inputCls} calendar-icon-white`} />
             </Field>
-            <Field label={t("settings.gender")}>
+            <Field label={"Gender"}>
               <select value={form.gender} onChange={set("gender")} className={inputCls}>
-                <option value="">{t("common.select")}</option>
-                <option value="male">{t("common.male")}</option>
-                <option value="female">{t("common.female")}</option>
-                <option value="other">{t("common.other")}</option>
+                <option value="">{"Select"}</option>
+                <option value="male">{"Male"}</option>
+                <option value="female">{"Female"}</option>
+                <option value="other">{"Other"}</option>
               </select>
             </Field>
-            <Field label={t("common.organization")}>
-              <input type="text" value={form.organization} onChange={set("organization")} className={inputCls} placeholder={t("settings.orgPlaceholder")} />
+            <Field label={"Organization"}>
+              <input type="text" value={form.organization} onChange={set("organization")} className={inputCls} placeholder={"Where you work"} />
             </Field>
-            <Field label={t("settings.jobTitle")}>
-              <input type="text" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} placeholder={t("settings.jobPlaceholder")} />
+            <Field label={"Job title"}>
+              <input type="text" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} placeholder={"Your role"} />
             </Field>
           </div>
         </Section>
 
         {/* Notifications */}
-        <Section title={t("settings.notifications", "Notifications")}>
+        <Section title={"Notifications"}>
           <p className="text-sm text-uni-muted">
-            {t(
-              "settings.notifBlurb",
-              "Get a push when someone sends you a prayer. Enable it on each device you use."
-            )}
+            Get a push when someone sends you a prayer. Enable it on each device
+            you use.
           </p>
           <button
             type="button"
@@ -369,30 +335,30 @@ const Settings = () => {
             className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-uni-surface border border-uni-border text-uni-text hover:border-uni-lime/50 disabled:opacity-50 transition-colors"
           >
             {notifBusy
-              ? t("settings.notifEnabling", "Enabling…")
-              : t("settings.notifEnable", "Enable push on this device")}
+              ? "Enabling…"
+              : "Enable push on this device"}
           </button>
 
           <div className="space-y-3 pt-1">
             <PrefToggle
-              label={t("settings.notifNewPrayers", "New prayer messages")}
+              label={"New prayer messages"}
               checked={form.notificationPrefs.newMessages !== false}
               onChange={(v) => setPref("newMessages", v)}
             />
             <PrefToggle
-              label={t("settings.notifDailyNudge", "Daily verse nudge")}
+              label={"Daily verse nudge"}
               checked={!!form.notificationPrefs.nudges}
               onChange={(v) => setPref("nudges", v)}
             />
             {form.notificationPrefs.nudges && (
               <div className="space-y-4 pt-1">
-                <Field label={t("settings.notifNudgeTheme", "Nudge theme")}>
+                <Field label={"Nudge theme"}>
                   <select
                     value={form.notificationPrefs.nudgeTheme || ""}
                     onChange={(e) => setPref("nudgeTheme", e.target.value)}
                     className={inputCls}
                   >
-                    <option value="">{t("settings.notifAnyTheme", "Any (general)")}</option>
+                    <option value="">{"Any (general)"}</option>
                     {VERSE_THEMES.map((th) => (
                       <option key={th.id} value={th.id}>
                         {th.label}
@@ -401,7 +367,7 @@ const Settings = () => {
                   </select>
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label={t("settings.notifQuietStart", "Quiet hours start")}>
+                  <Field label={"Quiet hours start"}>
                     <select
                       value={form.notificationPrefs.quietHours.start}
                       onChange={(e) => setQuiet("start", Number(e.target.value))}
@@ -414,7 +380,7 @@ const Settings = () => {
                       ))}
                     </select>
                   </Field>
-                  <Field label={t("settings.notifQuietEnd", "Quiet hours end")}>
+                  <Field label={"Quiet hours end"}>
                     <select
                       value={form.notificationPrefs.quietHours.end}
                       onChange={(e) => setQuiet("end", Number(e.target.value))}
@@ -429,7 +395,7 @@ const Settings = () => {
                   </Field>
                 </div>
                 <p className="text-xs text-uni-muted">
-                  {t("settings.notifQuietHint", "No nudges between these hours. Preferences save with your profile.")}
+                  {"No nudges between these hours. Preferences save with your profile."}
                 </p>
               </div>
             )}
@@ -443,14 +409,14 @@ const Settings = () => {
             onClick={() => navigate("/chat")}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
           >
-            {t("settings.cancel")}
+            {"Cancel"}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="px-5 py-2.5 rounded-xl text-sm font-bold bg-brand text-uni-on-accent shadow-bubble hover:shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {saving ? t("settings.saving") : t("settings.save")}
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
       </form>
