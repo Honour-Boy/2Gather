@@ -4,6 +4,10 @@ import { auth } from '@/lib/firebase';
 
 const AuthContext = createContext();
 
+// The `useAuth` hook is intentionally colocated with its provider. This trips
+// react-refresh/only-export-components (a fast-refresh DX hint, not a bug);
+// disabled here rather than splitting the tiny context across two files.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
 
 // Auth/routing is **session-driven**: `allowUser` mirrors the Firebase Auth

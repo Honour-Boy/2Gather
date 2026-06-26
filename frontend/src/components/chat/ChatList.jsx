@@ -104,7 +104,7 @@ const ChatList = () => {
       }
     };
 
-    if (currentUser) fetchSuggestions();
+    if (currentUser?.id) fetchSuggestions();
   }, [currentUser?.id, chats]);
 
   const handleSearch = async () => {
