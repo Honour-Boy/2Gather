@@ -1,6 +1,5 @@
 ﻿import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { Chat, Detail, List } from "@/components/chat";
 import useChatStore from "@/store/chatStore";
 import Navbar from "@/components/common/Navbar";
@@ -10,7 +9,6 @@ import useModeStore from "@/store/modeStore";
 import { themeForMode } from "@/lib/modes";
 
 const EmptyChatState = () => {
-  const { t } = useTranslation();
   const { activeMode } = useModeStore();
   const theme = themeForMode(activeMode);
   return (
@@ -30,10 +28,10 @@ const EmptyChatState = () => {
         </svg>
       </div>
       <h2 className="text-xl font-semibold text-uni-text">
-        {t("chatRoom.selectTitle")}
+        {"Select a chat to start messaging"}
       </h2>
       <p className="text-sm text-uni-muted mt-2 max-w-sm">
-        {t("chatRoom.selectBody")}
+        {"Choose a conversation from the sidebar, or search for a contact to begin a new multilingual conversation."}
       </p>
       <ModeSwitcher className="mt-6 max-w-md" />
       <VerseOfTheDay theme={theme} className="mt-5 w-full max-w-sm" />
@@ -50,7 +48,6 @@ const EmptyChatState = () => {
 const ChatRoom = () => {
   const { chatId, isCurrentUserBlocked } = useChatStore();
   const [detailOpen, setDetailOpen] = useState(false);
-  const { t } = useTranslation();
 
   const hasChat = !!chatId;
   const toggleDetail = () => setDetailOpen((prev) => !prev);
@@ -80,7 +77,7 @@ const ChatRoom = () => {
             <EmptyChatState />
           ) : isCurrentUserBlocked ? (
             <div className="flex items-center justify-center w-full h-full text-uni-muted flex-col gap-2">
-              {t("chatRoom.blocked")}
+              {"You have been blocked."}
             </div>
           ) : (
             <Chat onHeaderClick={toggleDetail} detailOpen={detailOpen} />

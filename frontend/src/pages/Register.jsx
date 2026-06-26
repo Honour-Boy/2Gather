@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTranslation, Trans } from "react-i18next";
 import { showPass, hidePass } from "@/assets";
 import { db, auth } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -30,7 +29,6 @@ function Register() {
   const [privacyContent, setPrivacyContent] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   useEffect(() => {
     fetch(terms)
@@ -50,12 +48,12 @@ function Register() {
 
   const validate = () => {
     const e = {};
-    if (!fullName.trim()) e.fullName = t("register.errFullName");
+    if (!fullName.trim()) e.fullName = "Full name is required.";
     if (password !== confirmPassword)
-      e.confirmPassword = t("register.errPasswordsMatch");
+      e.confirmPassword = "Passwords do not match.";
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
     if (!passwordRegex.test(password))
-      e.password = t("register.errPasswordRule");
+      e.password = "At least 6 chars, one upper, one lower.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -84,7 +82,7 @@ function Register() {
       navigate("/create-profile");
     } catch (error) {
       console.error(error);
-      notify.error(t("register.registrationFailed"));
+      notify.error("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -108,8 +106,8 @@ function Register() {
           <div className="bg-uni-surface border border-uni-border text-uni-text rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto uni-scroll p-6">
             <h2 className="text-xl font-bold mb-3 text-uni-text">
               {popupContent === "terms"
-                ? t("register.termsTitle")
-                : t("register.privacyTitle")}
+                ? "Terms and Conditions"
+                : "Privacy Policy"}
             </h2>
             <div className="text-sm text-uni-text whitespace-pre-wrap text-left leading-relaxed">
               <ReactMarkdown>
@@ -120,19 +118,19 @@ function Register() {
               onClick={() => setShowPopup(false)}
               className="mt-5 auth-primary-btn"
             >
-              {t("register.close")}
+              {"Close"}
             </button>
           </div>
         </div>
       )}
 
       <AuthLayout
-        title={t("register.title")}
-        subtitle={t("register.subtitle")}
+        title={"Create your account"}
+        subtitle={"Join 2Gather and start praying together."}
         wide
       >
         <form onSubmit={handleRegister} className="space-y-4">
-          <Field label={t("register.fullName")} htmlFor="fullName">
+          <Field label={"Full name"} htmlFor="fullName">
             <input
               type="text"
               id="fullName"
@@ -145,7 +143,7 @@ function Register() {
             {errors.fullName && <ErrorText msg={errors.fullName} />}
           </Field>
 
-          <Field label={t("register.email")} htmlFor="email">
+          <Field label={"Email"} htmlFor="email">
             <input
               type="email"
               id="email"
@@ -158,7 +156,7 @@ function Register() {
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label={t("register.password")} htmlFor="password">
+            <Field label={"Password"} htmlFor="password">
               <div className="relative">
                 <input
                   type={passwordShow.type}
@@ -173,7 +171,7 @@ function Register() {
                   type="button"
                   onClick={togglePassword}
                   className="absolute inset-y-0 right-3 flex items-center text-uni-muted hover:text-uni-text"
-                  aria-label={t("register.password")}
+                  aria-label={"Password"}
                 >
                   <img src={passwordShow.img} className="w-4" alt="" />
                 </button>
@@ -181,7 +179,7 @@ function Register() {
               {errors.password && <ErrorText msg={errors.password} />}
             </Field>
 
-            <Field label={t("register.confirmPassword")} htmlFor="confirmPassword">
+            <Field label={"Confirm password"} htmlFor="confirmPassword">
               <input
                 type={passwordShow.type}
                 id="confirmPassword"
@@ -204,25 +202,23 @@ function Register() {
               required
             />
             <span>
-              <Trans
-                i18nKey="register.agree"
-                components={{
-                  terms: (
-                    <a
-                      href="#"
-                      onClick={openTerms}
-                      className="text-uni-cyan hover:text-uni-lime"
-                    />
-                  ),
-                  privacy: (
-                    <a
-                      href="#"
-                      onClick={openPrivacy}
-                      className="text-uni-cyan hover:text-uni-lime"
-                    />
-                  ),
-                }}
-              />
+              I agree to 2Gather&apos;s{" "}
+              <a
+                href="#"
+                onClick={openTerms}
+                className="text-uni-blue hover:text-uni-gold"
+              >
+                Terms
+              </a>{" "}
+              and{" "}
+              <a
+                href="#"
+                onClick={openPrivacy}
+                className="text-uni-blue hover:text-uni-gold"
+              >
+                Privacy Policy
+              </a>
+              .
             </span>
           </label>
 
@@ -231,16 +227,16 @@ function Register() {
             disabled={loading}
             className="auth-primary-btn"
           >
-            {loading ? <Spinner /> : t("register.createAccount")}
+            {loading ? <Spinner /> : "Create account"}
           </button>
 
           <p className="text-center text-sm text-uni-muted pt-1">
-            {t("register.haveAccount")}{" "}
+            {"Already have an account?"}{" "}
             <Link
               to="/login"
               className="text-uni-cyan hover:text-uni-lime font-medium"
             >
-              {t("register.signIn")}
+              {"Sign in"}
             </Link>
           </p>
         </form>

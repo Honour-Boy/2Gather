@@ -1,22 +1,8 @@
 import { format } from "timeago.js";
-import { useTranslation } from "react-i18next";
-import { TranslateIcon } from "@/components/ui/icons";
 
-// A single chat message: the bubble, the translation label/toggle, and timestamp.
-// The sender sees their original text; the recipient sees the translation, with a
-// toggle to reveal the original.
-const MessageBubble = ({
-  message,
-  isMine,
-  showOriginal,
-  targetLabel,
-  sourceLabel,
-  onToggleOriginal,
-}) => {
-  const { t } = useTranslation();
-  const hasTranslation =
-    message.translatedText && message.translatedText !== message.text;
-
+// A single chat message bubble: the text, an optional "Prayer" tag, and a
+// timestamp. Sent messages use the warm gold bubble; received use a light card.
+const MessageBubble = ({ message, isMine }) => {
   return (
     <div
       className={`flex w-full ${
@@ -29,9 +15,9 @@ const MessageBubble = ({
         }`}
       >
         {message.kind === "prayer" && (
-          <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-uni-lime">
-            <span className="w-1.5 h-1.5 rounded-full bg-uni-lime" />
-            {t("chat.prayer", "Prayer")}
+          <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-uni-gold">
+            <span className="w-1.5 h-1.5 rounded-full bg-uni-gold" />
+            Prayer
           </span>
         )}
         <div
@@ -39,45 +25,10 @@ const MessageBubble = ({
             isMine
               ? "bg-bubble-sent text-uni-on-accent font-medium shadow-bubble rounded-br-md"
               : "bg-uni-surface text-uni-text rounded-bl-md border border-uni-border"
-          }${message.kind === "prayer" ? " ring-1 ring-uni-lime/30" : ""}`}
+          }${message.kind === "prayer" ? " ring-1 ring-uni-gold/30" : ""}`}
         >
-          {/* translate="no" keeps a browser's page-translation (e.g. a French
-              UI) from re-translating message content — so toggling to the
-              original shows the recipient's real POV, not a browser render. */}
-          <p className="whitespace-pre-wrap text-left" translate="no">
-            {isMine
-              ? message.text
-              : showOriginal
-              ? message.text
-              : message.translatedText || message.text}
-          </p>
+          <p className="whitespace-pre-wrap text-left">{message.text}</p>
         </div>
-
-        {/* Translation label / toggle */}
-        {hasTranslation && (
-          <div
-            className={`mt-1 flex items-center gap-2 text-[11px] ${
-              isMine ? "text-uni-cyan/90" : "text-uni-muted"
-            }`}
-          >
-            {isMine ? (
-              <span className="flex items-center gap-1">
-                <TranslateIcon />
-                {t("chat.translatedTo", { lang: targetLabel })}
-              </span>
-            ) : (
-              <button
-                onClick={onToggleOriginal}
-                className="flex items-center gap-1 hover:text-uni-lime transition-colors"
-              >
-                <TranslateIcon />
-                {showOriginal
-                  ? t("chat.showTranslation")
-                  : t("chat.translatedFrom", { lang: sourceLabel })}
-              </button>
-            )}
-          </div>
-        )}
 
         <span
           className={`text-[10px] text-uni-muted mt-0.5 ${
