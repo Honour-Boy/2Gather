@@ -272,6 +272,8 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             message={message}
             isMine={message.senderId === currentUser?.id}
             onSave={handleSavePrayer}
+            chatId={chatId}
+            currentUser={currentUser}
           />
         ))}
 
