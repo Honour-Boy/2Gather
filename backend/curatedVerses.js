@@ -20,6 +20,7 @@ const {
 } = require("./verses");
 const bibleApi = require("./bibleApi");
 const { askProvider, aiAvailable, noteLlmCall } = require("./verseRecommend");
+const curationStore = require("./dailyCurationStore");
 
 const utcDay = () => new Date().toISOString().slice(0, 10);
 
@@ -51,23 +52,35 @@ function canCurate() {
   return aiAvailable() && bibleApi.bibleEnabled();
 }
 
-// Get the day's reference list for a theme (cached → no repeat AI call), or null.
-// `spend` (the budget counter) is called ONLY when an actual AI call happens —
-// i.e. on a cache miss — so re-entering a theme costs nothing.
-async function themeRefs(theme, ask, spend) {
-  const key = `${theme || "general"}:${utcDay()}`;
-  const cached = themeRefCache.get(key);
-  if (cached) return cached;
+// The day's reference list for a kind ("theme" | "votd") + theme: in-memory cache
+// → Firestore (survives restarts, shared across instances) → a fresh AI call (then
+// persisted). Returns refs or null. `spend` (the budget counter) and the AI call
+// happen ONLY on a full miss, so re-entering a theme — or a restart — costs nothing.
+async function dayRefs(kind, theme, ask, spend, store, canGen) {
+  const day = utcDay();
+  const cacheKey = `${kind}:${theme || "general"}:${day}`;
+  const mem = kind === "votd" ? votdRefCache : themeRefCache;
+  if (mem.has(cacheKey)) return mem.get(cacheKey);
+
+  const stored = await store.getSet(kind, theme, day);
+  if (stored) {
+    mem.set(cacheKey, stored);
+    return stored;
+  }
+  if (!canGen) return null;
+
   if (spend) spend();
   try {
-    const refs = await ask(
-      CURATE_SYS,
-      `Name 12 real Bible verses ${scope(theme)}. Reply with ONLY the references separated by semicolons (e.g. "Psalm 23:1; John 14:27").`,
-      260
-    );
+    const prompt =
+      kind === "votd"
+        ? `Name ONE real Bible verse ${scope(theme)} as a verse of the day. Reply with ONLY the reference (e.g. "Psalm 46:1").`
+        : `Name 12 real Bible verses ${scope(theme)}. Reply with ONLY the references separated by semicolons (e.g. "Psalm 23:1; John 14:27").`;
+    const refs = await ask(CURATE_SYS, prompt, kind === "votd" ? 24 : 260);
     if (Array.isArray(refs) && refs.length) {
-      themeRefCache.set(key, refs);
-      return refs;
+      const keep = kind === "votd" ? refs.slice(0, 1) : refs;
+      mem.set(cacheKey, keep);
+      await store.saveSet(kind, theme, day, keep);
+      return keep;
     }
   } catch {
     /* fall through */
@@ -76,12 +89,15 @@ async function themeRefs(theme, ask, spend) {
 }
 
 // Resolve reference strings → verbatim verses (capped, deduped) in a translation.
+// Resolves in parallel (a few extra in case some refs don't resolve), then keeps
+// the first `cap` unique ones in order — much faster than serial fetches.
 async function resolveMany(refs, cap, theme, resolve) {
+  const list = (Array.isArray(refs) ? refs : []).slice(0, cap + 4);
+  const resolved = await Promise.all(list.map((r) => resolve(r).catch(() => null)));
   const out = [];
   const seen = new Set();
-  for (const ref of Array.isArray(refs) ? refs : []) {
+  for (const v of resolved) {
     if (out.length >= cap) break;
-    const v = await resolve(ref);
     if (v && v.text && !seen.has(v.id)) {
       seen.add(v.id);
       out.push({
@@ -102,46 +118,45 @@ async function resolveMany(refs, cap, theme, resolve) {
 async function getThemeVerses(theme, opts = {}) {
   const ask = opts.ask || askProvider;
   const resolve = opts.resolve || ((r) => bibleApi.getPassage(r, opts.bibleId));
-  // Spend a budget unit only on a real AI call (cache miss); null in tests / when
-  // a ranker is injected.
   const spend = opts.spend || (opts.ask ? null : noteLlmCall);
-  if (opts.ask || canCurate()) {
-    const refs = await themeRefs(theme, ask, spend);
-    if (refs) {
-      const verses = await resolveMany(refs, 12, theme, resolve);
-      if (verses.length >= 2) return verses;
-    }
+  const store = opts.store || curationStore;
+  const canGen = opts.ask ? true : canCurate();
+
+  // Today's set: memory → DB → fresh AI (persisted).
+  const refs = await dayRefs("theme", theme, ask, spend, store, canGen);
+  if (refs) {
+    const verses = await resolveMany(refs, 12, theme, resolve);
+    if (verses.length >= 2) return verses;
   }
+  // Fallback: a recent prior day's set from the store (real curated verses, better
+  // than the static seed).
+  const prior = await store.getRecentPrior("theme", theme, utcDay());
+  if (prior) {
+    const verses = await resolveMany(prior, 12, theme, resolve);
+    if (verses.length >= 1) return verses;
+  }
+  // Last resort: the bundled seed.
   return theme ? getVersesByTheme(theme) : VERSES;
 }
 
-// The verse of the day — AI-picked reference (cached daily) resolved in the chosen
-// translation, or the deterministic seed.
+// The verse of the day — AI-picked reference (memory → DB → AI, cached/persisted),
+// resolved in the chosen translation, then a prior day, then the deterministic seed.
 async function getDailyVerse(theme, opts = {}) {
   const ask = opts.ask || askProvider;
   const resolve = opts.resolve || ((r) => bibleApi.getPassage(r, opts.bibleId));
-  const key = `${theme || "general"}:${utcDay()}`;
+  const spend = opts.spend || (opts.ask ? null : noteLlmCall);
+  const store = opts.store || curationStore;
+  const canGen = opts.ask ? true : canCurate();
 
-  if (opts.ask || canCurate()) {
-    let ref = votdRefCache.get(key);
-    if (!ref) {
-      if (!opts.ask) noteLlmCall();
-      try {
-        const refs = await ask(
-          CURATE_SYS,
-          `Name ONE real Bible verse ${scope(theme)} as a verse of the day. Reply with ONLY the reference (e.g. "Psalm 46:1").`,
-          24
-        );
-        ref = Array.isArray(refs) && refs.length ? refs[0] : null;
-        if (ref) votdRefCache.set(key, ref);
-      } catch {
-        ref = null;
-      }
-    }
-    if (ref) {
-      const [verse] = await resolveMany([ref], 1, theme, resolve);
-      if (verse) return verse;
-    }
+  const refs = await dayRefs("votd", theme, ask, spend, store, canGen);
+  if (refs && refs.length) {
+    const [verse] = await resolveMany([refs[0]], 1, theme, resolve);
+    if (verse) return verse;
+  }
+  const prior = await store.getRecentPrior("votd", theme, utcDay());
+  if (prior && prior.length) {
+    const [verse] = await resolveMany([prior[0]], 1, theme, resolve);
+    if (verse) return verse;
   }
   return seedDailyVerse(utcDay(), theme);
 }

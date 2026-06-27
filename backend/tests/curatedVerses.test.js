@@ -52,6 +52,39 @@ describe("getThemeVerses", () => {
     expect(asks).toBe(1); // AI proposed references only once today
     expect(spends).toBe(1); // and the budget was charged only once (not on the cache hit)
   });
+
+  test("persists today's references to the store and reuses them after a restart (no AI)", async () => {
+    const saved = new Map();
+    const store = {
+      getSet: async (kind, theme, day) => saved.get(`${kind}:${theme}:${day}`) || null,
+      saveSet: async (kind, theme, day, refs) => saved.set(`${kind}:${theme}:${day}`, refs),
+      getRecentPrior: async () => null,
+    };
+    let asks = 0;
+    const ask = async () => {
+      asks++;
+      return ["John 14:27", "Psalm 4:8"];
+    };
+    const resolve = async (ref) => ({ id: ref, reference: ref, text: "t" });
+
+    await cv.getThemeVerses("rest", { ask, resolve, store }); // generates + persists
+    cv._resetState(); // simulate a restart → in-memory cache cleared
+    const again = await cv.getThemeVerses("rest", { ask, resolve, store }); // from the DB
+    expect(asks).toBe(1); // not regenerated — served from the store
+    expect(again).toHaveLength(2);
+  });
+
+  test("uses a recent prior day's set from the store when today can't be generated", async () => {
+    const store = {
+      getSet: async () => null, // nothing for today
+      saveSet: async () => {},
+      getRecentPrior: async () => ["Isaiah 40:31", "Psalm 27:1"], // yesterday's set
+    };
+    const resolve = async (ref) => ({ id: ref, reference: ref, text: "t" });
+    // no AI key / no injected ranker → can't generate today → prior-day set, not seed
+    const verses = await cv.getThemeVerses("courage", { resolve, store });
+    expect(verses.map((v) => v.reference)).toEqual(["Isaiah 40:31", "Psalm 27:1"]);
+  });
 });
 
 describe("getDailyVerse", () => {
