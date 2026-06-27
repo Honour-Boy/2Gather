@@ -227,10 +227,11 @@ function parseReferenceList(reply) {
     .slice(0, 20); // recommend uses the first few; curation needs ~12
 }
 
-// One OpenAI-compatible /chat/completions call → an array of reference strings the
-// model chose. Never trusted for scripture TEXT — only the references; we fetch
-// the words from API.Bible.
-async function callProvider(systemPrompt, userText, maxTokens, cfg) {
+// One OpenAI-compatible /chat/completions call → the model's raw message content
+// (string). Callers decide how to use it: reference lists are parsed (and never
+// trusted for scripture TEXT — we fetch the words from API.Bible), while a
+// generated starter prayer is used as prose.
+async function callProviderRaw(systemPrompt, userText, maxTokens, cfg) {
   const { data } = await axios.post(
     `${cfg.baseUrl}/chat/completions`,
     {
@@ -247,21 +248,20 @@ async function callProvider(systemPrompt, userText, maxTokens, cfg) {
       timeout: cfg.timeoutMs,
     }
   );
-  return parseReferenceList(data?.choices?.[0]?.message?.content || "");
+  return data?.choices?.[0]?.message?.content || "";
 }
 
-// Shared, guardrailed provider call → reference strings. Capped retries on
-// transient errors, immediate circuit-break (no retry) on a bad key / exhausted
-// quota. Used by both the recommender and the daily-curation (themed sets + VOTD)
-// so they share ONE budget + breaker. Caller gates on aiAvailable()/spends budget.
-async function askProvider(systemPrompt, userText, maxTokens = AI_DEFAULTS.maxOutputTokens) {
+// Shared, guardrailed raw provider call. Capped retries on transient errors,
+// immediate circuit-break (no retry) on a bad key / exhausted quota. Everything
+// that talks to the model funnels through here so they share ONE budget + breaker.
+async function askRaw(systemPrompt, userText, maxTokens) {
   const cfg = aiConfig();
   if (!cfg.apiKey) throw new Error("AI disabled (no AI_API_KEY)");
 
   let attempt = 0;
   for (;;) {
     try {
-      return await callProvider(systemPrompt, userText, maxTokens, cfg);
+      return await callProviderRaw(systemPrompt, userText, maxTokens, cfg);
     } catch (err) {
       const status = err && err.response && err.response.status;
       // Auth/quota: don't retry, and stop calling for a while.
@@ -274,6 +274,18 @@ async function askProvider(systemPrompt, userText, maxTokens = AI_DEFAULTS.maxOu
       await sleep(250 * attempt); // small linear backoff
     }
   }
+}
+
+// Reference-list variant (recommender + daily curation): parse the reply into
+// reference strings. Caller gates on aiAvailable()/spends budget.
+async function askProvider(systemPrompt, userText, maxTokens = AI_DEFAULTS.maxOutputTokens) {
+  return parseReferenceList(await askRaw(systemPrompt, userText, maxTokens));
+}
+
+// Prose variant (e.g. an AI-generated starter prayer): the trimmed raw text.
+// Same guardrails/budget/breaker as askProvider.
+async function askProviderText(systemPrompt, userText, maxTokens = 160) {
+  return String((await askRaw(systemPrompt, userText, maxTokens)) || "").trim();
 }
 
 // The recommender's provider call: the model names references for a request
@@ -465,6 +477,7 @@ module.exports = {
   parseReferenceList,
   resolveReference,
   askProvider,
+  askProviderText,
   aiConfig,
   aiAvailable,
   budgetRemaining,
