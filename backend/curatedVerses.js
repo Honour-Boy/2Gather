@@ -52,10 +52,13 @@ function canCurate() {
 }
 
 // Get the day's reference list for a theme (cached → no repeat AI call), or null.
-async function themeRefs(theme, ask) {
+// `spend` (the budget counter) is called ONLY when an actual AI call happens —
+// i.e. on a cache miss — so re-entering a theme costs nothing.
+async function themeRefs(theme, ask, spend) {
   const key = `${theme || "general"}:${utcDay()}`;
   const cached = themeRefCache.get(key);
   if (cached) return cached;
+  if (spend) spend();
   try {
     const refs = await ask(
       CURATE_SYS,
@@ -99,9 +102,11 @@ async function resolveMany(refs, cap, theme, resolve) {
 async function getThemeVerses(theme, opts = {}) {
   const ask = opts.ask || askProvider;
   const resolve = opts.resolve || ((r) => bibleApi.getPassage(r, opts.bibleId));
+  // Spend a budget unit only on a real AI call (cache miss); null in tests / when
+  // a ranker is injected.
+  const spend = opts.spend || (opts.ask ? null : noteLlmCall);
   if (opts.ask || canCurate()) {
-    if (!opts.ask) noteLlmCall();
-    const refs = await themeRefs(theme, ask);
+    const refs = await themeRefs(theme, ask, spend);
     if (refs) {
       const verses = await resolveMany(refs, 12, theme, resolve);
       if (verses.length >= 2) return verses;

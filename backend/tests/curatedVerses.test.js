@@ -33,6 +33,25 @@ describe("getThemeVerses", () => {
     const verses = await cv.getThemeVerses("courage"); // no deps, no keys
     expect(verses).toEqual(getVersesByTheme("courage"));
   });
+
+  test("re-entering a theme reuses cached refs — one AI call, budget spent once", async () => {
+    let asks = 0;
+    let spends = 0;
+    const ask = async () => {
+      asks++;
+      return ["John 14:27", "Psalm 4:8"];
+    };
+    const resolve = async (ref) => ({ id: ref, reference: ref, text: "t " + ref });
+    const spend = () => {
+      spends++;
+    };
+
+    await cv.getThemeVerses("rest", { ask, resolve, spend });
+    await cv.getThemeVerses("rest", { ask, resolve, spend }); // e.g. switch away + back
+
+    expect(asks).toBe(1); // AI proposed references only once today
+    expect(spends).toBe(1); // and the budget was charged only once (not on the cache hit)
+  });
 });
 
 describe("getDailyVerse", () => {
