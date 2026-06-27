@@ -56,11 +56,12 @@ describe("recommendVerses — grounding", () => {
     expect(verses[0].text).toMatch(/afraid/); // text came from the resolver, not the model
   });
 
-  test("caps results to at most 3", async () => {
-    const llmRank = async () => ["A 1:1", "B 2:2", "C 3:3", "D 4:4", "E 5:5"];
+  test("returns a larger set (up to 9) for the client to page through", async () => {
+    const llmRank = async () =>
+      Array.from({ length: 12 }, (_, i) => `Psalm ${i + 1}:1`); // model offers many
     const resolve = async (ref) => ({ id: ref.replace(/\W/g, ""), reference: ref, text: "text " + ref });
     const { verses } = await recommendVerses({ request: "anxious and afraid" }, { llmRank, resolve });
-    expect(verses.length).toBeLessThanOrEqual(3);
+    expect(verses.length).toBe(9); // capped at RECOMMEND_MAX
   });
 
   test("recommends real verses from outside the static seed (whole Bible)", async () => {

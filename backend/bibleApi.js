@@ -9,6 +9,7 @@
 
 const axios = require("axios");
 const { parseReference, humanBook } = require("./bibleRef");
+const { isCacheableId, abbrForId } = require("./translations");
 
 const DEFAULTS = {
   baseUrl: "https://rest.api.bible/v1",
@@ -80,7 +81,10 @@ function bibleEnabled() {
 }
 
 function cleanText(s) {
-  return String(s || "").replace(/\s+/g, " ").trim();
+  return String(s || "")
+    .replace(/¶/g, "") // paragraph markers (e.g. KJV)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function apiGet(path, params, cfg) {
@@ -98,23 +102,29 @@ async function apiGet(path, params, cfg) {
   }
 }
 
-// Resolve a free-form reference ("John 3:16", "1 Cor 13:4-7") to verbatim text.
-// Returns { id, reference, text } or null (unparseable book, no resolution, or
-// API disabled/over-budget). NEVER returns AI-authored text.
-async function getPassage(reference) {
+// Resolve a free-form reference ("John 3:16", "1 Cor 13:4-7") to verbatim text in
+// a given translation (bibleId; defaults to the configured one). Returns
+// { id, reference, text, translation } or null. Text is cached only for
+// public-domain bibles (licensed ones must not be stored — see translations.js).
+// NEVER returns AI-authored text.
+async function getPassage(reference, bibleIdArg) {
   const parsed = parseReference(reference);
   if (!parsed) return null;
 
   const cfg = bibleConfig();
-  const cacheK = `${cfg.bibleId}:passage:${parsed.id}`;
-  const cached = cacheGet(cacheK);
-  if (cached) return cached;
+  const bibleId = bibleIdArg || cfg.bibleId;
+  const cacheable = isCacheableId(bibleId);
+  const cacheK = `${bibleId}:passage:${parsed.id}`;
+  if (cacheable) {
+    const cached = cacheGet(cacheK);
+    if (cached) return cached;
+  }
   if (!bibleEnabled()) return null;
 
   noteCall();
   try {
     const data = await apiGet(
-      `/bibles/${cfg.bibleId}/passages/${encodeURIComponent(parsed.id)}`,
+      `/bibles/${bibleId}/passages/${encodeURIComponent(parsed.id)}`,
       {
         "content-type": "text",
         "include-notes": false,
@@ -127,38 +137,44 @@ async function getPassage(reference) {
     );
     const text = cleanText(data && data.data && data.data.content);
     if (!text) return null;
-    const value = { id: parsed.id, reference: parsed.reference, text };
-    cacheSet(cacheK, value);
+    const value = { id: parsed.id, reference: parsed.reference, text, translation: abbrForId(bibleId) };
+    if (cacheable) cacheSet(cacheK, value);
     return value;
   } catch {
     return null; // API error (breaker already tripped on 401/403 inside apiGet)
   }
 }
 
-// Whole-Bible keyword search → [{ id, reference, text }] (capped). Returns [] when
-// disabled/over-budget so callers can fall back.
-async function searchBible(query, limit = 12) {
+// Whole-Bible keyword search in a translation → [{ id, reference, text, translation }]
+// (capped). Returns [] when disabled/over-budget so callers can fall back. Cached
+// for public-domain bibles only.
+async function searchBible(query, limit = 12, bibleIdArg) {
   const q = String(query || "").trim();
   if (!q) return [];
 
   const cfg = bibleConfig();
-  const cacheK = `${cfg.bibleId}:search:${limit}:${q.toLowerCase()}`;
-  const cached = cacheGet(cacheK);
-  if (cached) return cached;
+  const bibleId = bibleIdArg || cfg.bibleId;
+  const cacheable = isCacheableId(bibleId);
+  const cacheK = `${bibleId}:search:${limit}:${q.toLowerCase()}`;
+  if (cacheable) {
+    const cached = cacheGet(cacheK);
+    if (cached) return cached;
+  }
   if (!bibleEnabled()) return [];
 
   noteCall();
   try {
     const data = await apiGet(
-      `/bibles/${cfg.bibleId}/search`,
+      `/bibles/${bibleId}/search`,
       { query: q, limit, sort: "relevance" },
       cfg
     );
     const verses = (data && data.data && data.data.verses) || [];
+    const abbr = abbrForId(bibleId);
     const out = verses
-      .map((v) => ({ id: v.id, reference: v.reference, text: cleanText(v.text) }))
+      .map((v) => ({ id: v.id, reference: v.reference, text: cleanText(v.text), translation: abbr }))
       .filter((v) => v.id && v.text);
-    cacheSet(cacheK, out);
+    if (cacheable) cacheSet(cacheK, out);
     return out;
   } catch {
     return []; // API error → caller falls back

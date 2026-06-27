@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import useUserStore from "@/store/userStore";
+import useTranslationStore from "@/store/translationStore";
 import { VERSE_THEMES } from "@/lib/modes";
 import { fetchVerses, searchVerses as searchVersesApi } from "@/lib/verses";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 import VerseFinder from "@/components/verses/VerseFinder";
+import TranslationPicker from "@/components/ui/TranslationPicker";
 import { saveVerseToJournal } from "@/services/journal";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
@@ -14,6 +16,7 @@ import Toaster from "@/components/ui/Toaster";
 export default function Verses() {
   const { currentUser } = useUserStore();
   const uid = currentUser?.id;
+  const { translation } = useTranslationStore();
 
   const [verses, setVerses] = useState([]);
   const [theme, setTheme] = useState("all");
@@ -34,8 +37,8 @@ export default function Verses() {
     let active = true;
     setLoading(true);
     const req = searching
-      ? searchVersesApi(debouncedQ)
-      : fetchVerses({ theme: theme === "all" ? undefined : theme });
+      ? searchVersesApi(debouncedQ, translation)
+      : fetchVerses({ theme: theme === "all" ? undefined : theme, translation });
     req
       .then((list) => active && setVerses(list))
       .catch(() => active && setVerses([]))
@@ -43,7 +46,7 @@ export default function Verses() {
     return () => {
       active = false;
     };
-  }, [theme, debouncedQ, searching]);
+  }, [theme, debouncedQ, searching, translation]);
 
   const save = async (verse) => {
     if (!uid) return;
@@ -69,9 +72,12 @@ export default function Verses() {
     <div className="min-h-full px-4 sm:px-6 lg:px-10 py-6 md:py-10">
       <Toaster />
       <div className="max-w-3xl mx-auto">
-        <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-          Verses
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+            Verses
+          </h1>
+          <TranslationPicker className="mt-1.5 shrink-0" />
+        </div>
         <p className="mt-2 text-uni-muted">
           Scripture for the moment you&apos;re in — drawn from the whole Bible,
           curated and attributed (World English Bible).
@@ -148,7 +154,7 @@ export default function Verses() {
                 </blockquote>
                 <figcaption className="mt-2 flex items-center justify-between gap-3">
                   <span className="text-xs font-medium text-uni-muted">
-                    — {v.reference} <span className="opacity-60">(WEB)</span>
+                    — {v.reference} <span className="opacity-60">({v.translation || "WEB"})</span>
                   </span>
                   <span className="flex items-center gap-3 shrink-0">
                     <button

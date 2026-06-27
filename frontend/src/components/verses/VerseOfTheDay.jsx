@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { fetchDailyVerse } from "@/lib/verses";
+import useTranslationStore from "@/store/translationStore";
 
 // An ambient "verse of the day" card. Fails quietly (renders nothing) if the
 // backend is unreachable — it's a grace note, never a blocker. Optionally scope
 // to a theme (e.g. the user's active Mode in a later phase).
 export default function VerseOfTheDay({ theme, onSave, className = "" }) {
+  const { translation } = useTranslationStore();
   const [verse, setVerse] = useState(null);
   const [status, setStatus] = useState("loading"); // loading | ready | error
   const [saved, setSaved] = useState(false);
@@ -12,7 +14,7 @@ export default function VerseOfTheDay({ theme, onSave, className = "" }) {
   useEffect(() => {
     let active = true;
     setStatus("loading");
-    fetchDailyVerse({ theme })
+    fetchDailyVerse({ theme, translation })
       .then((v) => {
         if (!active) return;
         setVerse(v);
@@ -22,7 +24,7 @@ export default function VerseOfTheDay({ theme, onSave, className = "" }) {
     return () => {
       active = false;
     };
-  }, [theme]);
+  }, [theme, translation]);
 
   if (status === "error") return null;
 
@@ -63,7 +65,7 @@ export default function VerseOfTheDay({ theme, onSave, className = "" }) {
             “{verse.text}”
           </blockquote>
           <figcaption className="mt-3 text-xs font-medium text-uni-muted">
-            — {verse.reference} <span className="opacity-60">(WEB)</span>
+            — {verse.reference} <span className="opacity-60">({verse.translation || "WEB"})</span>
           </figcaption>
         </figure>
       )}

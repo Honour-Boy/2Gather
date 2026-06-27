@@ -1,24 +1,29 @@
 import { useState } from "react";
 import useUserStore from "@/store/userStore";
 import useModeStore from "@/store/modeStore";
+import useTranslationStore from "@/store/translationStore";
 import { themeForMode } from "@/lib/modes";
 import { recommendVerses } from "@/lib/verseRecommend";
 import { saveVerseToJournal } from "@/services/journal";
 import notify from "@/lib/toast";
 import Spinner from "@/components/ui/Spinner";
 
+const PAGE = 3;
+
 // "Find verses for what you're praying about" — the user describes their request
-// in their own words and gets 1–3 real, attributed verses to lean on (save to
-// journal or copy to share). The app never writes the prayer; it only surfaces
-// Scripture. Verses come grounded from the backend corpus.
+// and gets real, attributed verses to lean on. The AI proposes a set; we reveal
+// PAGE at a time ("show more" pages through the already-fetched verses — no new AI
+// call). The app never writes the prayer; it only surfaces Scripture.
 export default function VerseFinder({ className = "" }) {
   const { currentUser } = useUserStore();
   const uid = currentUser?.id;
   const { activeMode } = useModeStore();
+  const { translation } = useTranslationStore();
 
   const [request, setRequest] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // { verses, support, source }
+  const [visible, setVisible] = useState(PAGE);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [savedIds, setSavedIds] = useState(() => new Set());
@@ -30,10 +35,12 @@ export default function VerseFinder({ className = "" }) {
     setLoading(true);
     setError("");
     setResult(null);
+    setVisible(PAGE);
     try {
       const data = await recommendVerses({
         request: text,
         theme: themeForMode(activeMode),
+        translation,
       });
       setResult(data);
     } catch {
@@ -57,7 +64,7 @@ export default function VerseFinder({ className = "" }) {
   const copy = async (verse) => {
     try {
       await navigator.clipboard.writeText(
-        `“${verse.text}” — ${verse.reference} (WEB)`
+        `“${verse.text}” — ${verse.reference} (${verse.translation || "WEB"})`
       );
       setCopied(verse.id);
       setTimeout(() => setCopied(""), 1500);
@@ -65,6 +72,10 @@ export default function VerseFinder({ className = "" }) {
       notify.info("Couldn't copy — long-press to copy instead.");
     }
   };
+
+  const verses = result?.verses || [];
+  const shown = verses.slice(0, visible);
+  const remaining = verses.length - visible;
 
   return (
     <section
@@ -120,9 +131,9 @@ export default function VerseFinder({ className = "" }) {
         </p>
       )}
 
-      {result?.verses?.length > 0 && (
+      {shown.length > 0 && (
         <div className="mt-4 space-y-3">
-          {result.verses.map((v) => (
+          {shown.map((v) => (
             <figure
               key={v.id}
               className="rounded-2xl border border-uni-border bg-uni-surface p-4"
@@ -132,7 +143,7 @@ export default function VerseFinder({ className = "" }) {
               </blockquote>
               <figcaption className="mt-2 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-uni-muted">
-                  — {v.reference} <span className="opacity-60">(WEB)</span>
+                  — {v.reference} <span className="opacity-60">({v.translation || "WEB"})</span>
                 </span>
                 <span className="flex items-center gap-3 shrink-0">
                   <button
@@ -154,6 +165,15 @@ export default function VerseFinder({ className = "" }) {
               </figcaption>
             </figure>
           ))}
+
+          {remaining > 0 && (
+            <button
+              onClick={() => setVisible((v) => v + PAGE)}
+              className="w-full text-sm font-semibold text-uni-gold rounded-xl border border-uni-gold/30 bg-uni-surface py-2.5 hover:bg-brand-soft transition-colors"
+            >
+              Show {Math.min(PAGE, remaining)} more
+            </button>
+          )}
         </div>
       )}
     </section>

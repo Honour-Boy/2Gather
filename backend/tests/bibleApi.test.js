@@ -31,7 +31,7 @@ describe("getPassage", () => {
     });
 
     const a = await getPassage("John 3:16");
-    expect(a).toEqual({ id: "JHN.3.16", reference: "John 3:16", text: "For God so loved the world." });
+    expect(a).toEqual({ id: "JHN.3.16", reference: "John 3:16", text: "For God so loved the world.", translation: "WEB" });
     expect(axios.get).toHaveBeenCalledTimes(1);
 
     const b = await getPassage("John 3:16"); // served from cache
@@ -67,7 +67,7 @@ describe("searchBible", () => {
       data: { data: { verses: [{ id: "JHN.3.16", reference: "John 3:16", text: " ...loved... " }] } },
     });
     const out = await searchBible("love");
-    expect(out).toEqual([{ id: "JHN.3.16", reference: "John 3:16", text: "...loved..." }]);
+    expect(out).toEqual([{ id: "JHN.3.16", reference: "John 3:16", text: "...loved...", translation: "WEB" }]);
   });
 
   test("returns [] when disabled", async () => {

@@ -122,6 +122,21 @@ describe("recommendVerses honours the guardrails", () => {
     expect(budgetRemaining()).toBe(before - 1);
   });
 
+  test("an identical request reuses cached references — no second AI call, no extra tokens", async () => {
+    process.env.AI_API_KEY = "sk-test";
+    axios.post.mockResolvedValue({ data: { choices: [{ message: { content: "Isaiah 41:10" } }] } });
+    const resolve = async (ref) => ({ id: "ISA.41.10", reference: ref, text: "Don’t be afraid…" });
+
+    const before = budgetRemaining();
+    const r1 = await recommendVerses({ request: "I'm anxious about an interview" }, { resolve });
+    const r2 = await recommendVerses({ request: "I'm anxious about an interview" }, { resolve });
+
+    expect(r1.source).toBe("llm");
+    expect(r2.source).toBe("llm");
+    expect(axios.post).toHaveBeenCalledTimes(1); // second request reused the references
+    expect(budgetRemaining()).toBe(before - 1); // only one unit spent
+  });
+
   test("skips the LLM entirely once the budget is spent (no spend, pure fallback)", async () => {
     process.env.AI_API_KEY = "sk-test";
     process.env.AI_DAILY_LIMIT = "0";
