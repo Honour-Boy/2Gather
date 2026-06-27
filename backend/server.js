@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const { userchatsSyncHandler } = require("./userchats");
 const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./curatedVerses");
 const { recommendHandler } = require("./verseRecommend");
+const { listTranslations } = require("./translations");
 const { templatesHandler } = require("./prayerTemplates");
 const { initSentry } = require("./observability");
 
@@ -55,6 +56,11 @@ app.get("/api/verses/search", searchVersesHandler);
 // supply — it never writes scripture or a prayer — and the feature degrades to
 // keyword→theme retrieval when no AI key is configured. See verseRecommend.js.
 app.post("/api/verses/recommend", recommendHandler);
+
+// Translations the app offers (for the client's translation picker). See translations.js.
+app.get("/api/translations", (req, res) =>
+  res.json({ translations: listTranslations() })
+);
 
 // Prayer-template library (Phase 2): curated editable starter prayers by theme.
 // Static + public + cacheable. See prayerTemplates.js.

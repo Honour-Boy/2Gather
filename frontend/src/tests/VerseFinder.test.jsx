@@ -44,6 +44,7 @@ test("submitting a request shows the recommended verses", async () => {
   expect(recommendVerses).toHaveBeenCalledWith({
     request: "I'm anxious about my interview",
     theme: undefined,
+    translation: "WEB",
   });
 });
 

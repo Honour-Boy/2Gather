@@ -6,11 +6,15 @@ import { API_URL } from "@/lib/env";
 // writes scripture) and degrades to keyword→theme matching when AI is disabled.
 // `theme` (optional) is a hint, e.g. the active Mode's theme.
 // Returns { translation, verses:[{id,reference,text,themes}], matchedThemes, source, support? }.
-export async function recommendVerses({ request, theme } = {}) {
+export async function recommendVerses({ request, theme, translation } = {}) {
   const res = await fetch(`${API_URL}/api/verses/recommend`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ request, ...(theme ? { theme } : {}) }),
+    body: JSON.stringify({
+      request,
+      ...(theme ? { theme } : {}),
+      ...(translation ? { translation } : {}),
+    }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
