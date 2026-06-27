@@ -8,7 +8,7 @@ function NotFound() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-uni-bg text-uni-text text-center px-6">
+    <div className="flex items-center justify-center h-dvh bg-uni-bg text-uni-text text-center px-6">
       <div>
         <h1 className="font-display text-7xl font-bold mb-3 bg-brand bg-clip-text text-transparent">
           404

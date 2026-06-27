@@ -28,7 +28,7 @@ function Authed({ children }) {
   const { isLoading, currentUser } = useUserStore();
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center bg-uni-bg w-screen h-screen text-uni-text flex-col gap-3">
+      <div className="flex items-center justify-center bg-uni-bg w-full h-full text-uni-text flex-col gap-3">
         <LoadingSpinner />
         <span className="text-sm text-uni-muted">Loading…</span>
       </div>
@@ -62,7 +62,7 @@ function App() {
 
   return (
     <Router>
-      <div className="max-h-screen max-w-screen bg-uni-bg font-sans">
+      <div className="h-full w-full overflow-hidden bg-uni-bg font-sans">
         <Routes>
           <Route path="/" element={<PublicRouter><Intro /></PublicRouter>} />
           <Route path="/login" element={<PublicRouter><Login /></PublicRouter>} />

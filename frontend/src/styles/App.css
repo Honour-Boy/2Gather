@@ -1,8 +1,13 @@
 #root {
   margin: 0;
   padding: 0;
-  height: 100%;
-  max-height: 100vh;
+  /* The app is a fixed, non-scrolling frame; each screen owns its own scroll.
+     Use dynamic viewport height (dvh) so the frame matches the *visible* area on
+     mobile — 100vh is taller than the screen (it sits behind the browser's
+     address bar), which used to push the bottom tab bar out of view. */
+  height: 100vh; /* fallback for browsers without dvh */
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   max-width: 100vw;
   color: #2a2722;
@@ -11,7 +16,9 @@
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  /* Fill the parent (the AppShell scroll area), not the whole viewport — nesting
+     a 100vh box inside the shell double-counted the height and broke the layout. */
+  height: 100%;
   flex: 1;
   min-width: 0;
   background-color: #fbf6ec;

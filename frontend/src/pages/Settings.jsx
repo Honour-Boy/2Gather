@@ -110,7 +110,7 @@ const Settings = () => {
 
   if (!currentUser || !form) {
     return (
-      <div className="flex items-center justify-center h-screen bg-uni-bg text-uni-text">
+      <div className="flex items-center justify-center h-full bg-uni-bg text-uni-text">
         <LoadingSpinner />
       </div>
     );
@@ -220,22 +220,16 @@ const Settings = () => {
     <div className="min-h-full bg-uni-bg text-uni-text">
       <Toaster />
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-uni-border bg-uni-bg/90 backdrop-blur">
-        <button
-          onClick={() => navigate("/home")}
-          className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          aria-label={"Back"}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5" />
-            <path d="m12 19-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-base md:text-lg font-semibold text-uni-text">{"Edit profile"}</h1>
-      </div>
+      <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
+        <header>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+            {"Edit profile"}
+          </h1>
+          <p className="mt-1 text-sm text-uni-muted">
+            Update how you show up on 2Gather.
+          </p>
+        </header>
 
-      <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-8">
         {/* Avatar + identity summary */}
         <section className="flex items-center gap-4">
           <div className="relative shrink-0">

@@ -16,7 +16,11 @@ const PrivateRouter = ({ children }) => {
   }, [allowUser]);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-uni-bg text-uni-text">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return allowUser ? children : <Navigate to="/login" />;
