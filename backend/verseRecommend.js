@@ -104,55 +104,146 @@ function shape(list) {
     .map((v) => ({ id: v.id, reference: v.reference, text: v.text, themes: v.themes }));
 }
 
-function llmEnabled() {
-  return Boolean(process.env.AI_API_KEY);
+// --- AI config + cost guardrails ---------------------------------------------
+// An LLM is NEVER required and can never run away with cost. Every knob is
+// env-overridable with cheap, safe defaults:
+//   • pinned cheap model + tiny max_tokens (the reply is only verse numbers)
+//   • bounded prompt (≤ MAX_CANDIDATES verses; request ≤ MAX_REQUEST_LEN chars)
+//   • a hard per-day call budget (AI_DAILY_LIMIT) → fall back when it's spent
+//   • capped retries (AI_MAX_RETRIES) with backoff — never an infinite loop
+//   • a circuit breaker that stops calling on a bad key / exhausted quota
+//   • per-request cache + per-IP rate limit (below)
+// The OpenAI-dashboard usage limit is the ultimate backstop — see .env.example.
+const AI_DEFAULTS = {
+  model: "gpt-4o-mini", // cheap + plenty for ranking
+  baseUrl: "https://api.openai.com/v1",
+  maxRetries: 1,
+  timeoutMs: 8000,
+  dailyLimit: 200,
+  maxOutputTokens: 20,
+};
+
+// System prompt is fixed: it constrains the model to reply with ONLY numbers,
+// which both prevents prose/invented scripture AND keeps output tokens tiny.
+const SYSTEM_PROMPT =
+  "You help match Bible verses to what a person is praying about. From the " +
+  "NUMBERED candidate verses below, choose the 1-3 that best fit the request. " +
+  'Reply with ONLY their numbers separated by commas (e.g. "2, 5"). Do not ' +
+  "write a prayer, do not quote or invent any other scripture, do not add commentary.";
+
+function intEnv(name, def, min, max) {
+  const n = parseInt(process.env[name], 10);
+  if (Number.isNaN(n)) return def;
+  return Math.max(min, Math.min(max, n));
 }
 
-// Default provider client — OpenAI-compatible /chat/completions (works with
-// OpenAI, Groq, OpenRouter, … by swapping AI_BASE_URL + AI_MODEL + AI_API_KEY).
-// Returns an array of candidate ids the model selected (⊆ the ones we supplied).
-// Never trusted for scripture text: we only parse the numbers it replies with.
-async function defaultLlmRank(request, candidates) {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) throw new Error("AI disabled (no AI_API_KEY)");
-  const baseUrl = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
-  const model = process.env.AI_MODEL || "gpt-4o-mini";
+function aiConfig() {
+  return {
+    apiKey: process.env.AI_API_KEY || "",
+    model: process.env.AI_MODEL || AI_DEFAULTS.model,
+    baseUrl: (process.env.AI_BASE_URL || AI_DEFAULTS.baseUrl).replace(/\/+$/, ""),
+    maxRetries: intEnv("AI_MAX_RETRIES", AI_DEFAULTS.maxRetries, 0, 3),
+    timeoutMs: intEnv("AI_TIMEOUT_MS", AI_DEFAULTS.timeoutMs, 1000, 30000),
+    dailyLimit: intEnv("AI_DAILY_LIMIT", AI_DEFAULTS.dailyLimit, 0, 1000000),
+  };
+}
 
+// Per-day call budget (UTC). In-memory — resets on restart, which is fine; the
+// OpenAI usage limit is the real ceiling. One unit ≈ one prayer-request served
+// by the LLM (its bounded retries don't each cost a unit).
+const budget = { day: "", count: 0 };
+const utcDay = () => new Date().toISOString().slice(0, 10);
+function rollDay() {
+  if (budget.day !== utcDay()) {
+    budget.day = utcDay();
+    budget.count = 0;
+  }
+}
+function budgetRemaining() {
+  rollDay();
+  return aiConfig().dailyLimit - budget.count;
+}
+function noteLlmCall() {
+  rollDay();
+  budget.count += 1;
+}
+
+// Circuit breaker — once a bad key / exhausted quota is seen, stop calling for a
+// cooldown so we don't hammer a dead key. While open, requests use the fallback.
+const BREAKER_MS = 30 * 60_000;
+let breakerUntil = 0;
+const breakerOpen = () => Date.now() < breakerUntil;
+const tripBreaker = () => {
+  breakerUntil = Date.now() + BREAKER_MS;
+};
+
+// Is a live LLM call permitted right now? (key present, breaker closed, budget left)
+function aiAvailable() {
+  return Boolean(aiConfig().apiKey) && !breakerOpen() && budgetRemaining() > 0;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+function isQuotaError(err) {
+  const e = err && err.response && err.response.data && err.response.data.error;
+  return /insufficient_quota|billing|quota/i.test(String((e && (e.code || e.type)) || ""));
+}
+
+// One OpenAI-compatible /chat/completions call → candidate ids the model picked
+// (⊆ the ones we supplied). Never trusted for scripture: we only parse numbers.
+async function callProvider(request, candidates, cfg) {
   const numbered = candidates
     .map((c, i) => `${i + 1}. ${c.reference}: "${c.text}"`)
     .join("\n");
-  const system =
-    "You help match Bible verses to what a person is praying about. From the " +
-    "NUMBERED candidate verses below, choose the 1-3 that best fit the request. " +
-    'Reply with ONLY their numbers separated by commas (e.g. "2, 5"). Do not ' +
-    "write a prayer, do not quote or invent any other scripture, do not add commentary.";
-  const user = `Request: "${request}"\nCandidates:\n${numbered}`;
-
   const { data } = await axios.post(
-    `${baseUrl}/chat/completions`,
+    `${cfg.baseUrl}/chat/completions`,
     {
-      model,
+      model: cfg.model,
       messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Request: "${request}"\nCandidates:\n${numbered}` },
       ],
       temperature: 0.2,
-      max_tokens: 20,
+      max_tokens: AI_DEFAULTS.maxOutputTokens,
     },
     {
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      timeout: 8000,
+      headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
+      timeout: cfg.timeoutMs,
     }
   );
 
   const reply = data?.choices?.[0]?.message?.content || "";
-  // Map the reply's 1-based numbers back to candidate ids; ignore anything else.
   const ids = [];
   for (const n of reply.match(/\d+/g) || []) {
     const c = candidates[parseInt(n, 10) - 1];
     if (c && !ids.includes(c.id)) ids.push(c.id);
   }
   return ids;
+}
+
+// Default provider client with cost guardrails: capped retries on transient
+// errors, and an immediate circuit-break (no retry) on a bad key / exhausted
+// quota. Works with OpenAI, Groq, OpenRouter, … by swapping AI_BASE_URL/MODEL/KEY.
+async function defaultLlmRank(request, candidates) {
+  const cfg = aiConfig();
+  if (!cfg.apiKey) throw new Error("AI disabled (no AI_API_KEY)");
+
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await callProvider(request, candidates, cfg);
+    } catch (err) {
+      const status = err && err.response && err.response.status;
+      // Auth/quota: don't retry, and stop calling for a while.
+      if (status === 401 || status === 403 || isQuotaError(err)) {
+        tripBreaker();
+        throw err;
+      }
+      attempt += 1;
+      if (attempt > cfg.maxRetries || !RETRYABLE_STATUS.has(status)) throw err;
+      await sleep(250 * attempt); // small linear backoff
+    }
+  }
 }
 
 // Core logic (no Express) so it's unit-testable. `deps.llmRank` lets tests inject
@@ -180,9 +271,13 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
   const candidates = buildCandidates(usedThemes);
 
   // Optional LLM ranking, strictly constrained to the candidate ids we supplied.
+  // Tests inject `deps.llmRank`; in production we only call when the guardrails
+  // allow it (key set, breaker closed, daily budget left) and spend one unit.
   let picked = null;
   const llmRank = deps.llmRank || defaultLlmRank;
-  if (deps.llmRank || llmEnabled()) {
+  const useReal = !deps.llmRank && aiAvailable();
+  if (deps.llmRank || useReal) {
+    if (useReal) noteLlmCall();
     try {
       const ids = await llmRank(text, candidates);
       const allowed = new Set(candidates.map((c) => c.id));
@@ -225,10 +320,14 @@ function cacheKey(request, theme) {
   return `${theme || ""}::${request.toLowerCase().replace(/\s+/g, " ").trim()}`;
 }
 
-// Test helper: clear the limiter + cache so suites don't leak state into each other.
+// Test helper: clear the limiter + cache + AI budget/breaker so suites don't leak
+// state into each other.
 function _resetState() {
   hits.clear();
   cache.clear();
+  budget.day = "";
+  budget.count = 0;
+  breakerUntil = 0;
 }
 
 // POST /api/verses/recommend  { request: string, theme?: themeSlug }
@@ -278,11 +377,18 @@ module.exports = {
   THEME_KEYWORDS,
   CRISIS_PATTERN,
   SUPPORT_MESSAGE,
+  SYSTEM_PROMPT,
   MAX_REQUEST_LEN,
   detectThemes,
   buildCandidates,
   fallbackRank,
-  llmEnabled,
+  aiConfig,
+  aiAvailable,
+  budgetRemaining,
+  noteLlmCall,
+  breakerOpen,
+  tripBreaker,
+  isQuotaError,
   defaultLlmRank,
   recommendVerses,
   recommendHandler,
