@@ -1,10 +1,10 @@
-# Render Blueprint for the UniComm Express backend.
+# Render Blueprint for the 2Gather Express backend (REST API — no Socket.IO).
 # Import once via Render dashboard → New → Blueprint → pick this repo.
 # After that, pushes to `main` auto-deploy (autoDeploy: true).
 # Secret values (sync: false) must be set in the Render dashboard — see DEPLOYMENT.md.
 services:
   - type: web
-    name: unicomm-backend
+    name: 2gather-backend
     runtime: node
     rootDir: backend
     plan: free
@@ -13,9 +13,43 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      # Comma-separated allowed origins (the deployed Firebase Hosting URL + any others).
+      # Comma-separated allowed origins — the deployed Vercel frontend URL(s).
+      # e.g. https://2gather.vercel.app,http://localhost:5173
       - key: CORS_ORIGIN
         sync: false
-      # Entire Firebase service-account JSON as a single-line string.
+      # Entire Firebase service-account JSON (gather-bd64a) as a single-line string.
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
+
+      # --- AI verse recommendations (Phase 8) — optional ---
+      # Without AI_API_KEY the feature falls back to keyword→theme matching.
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: AI_DAILY_LIMIT
+        value: "200"
+
+      # --- Bible text source: API.Bible (Phase 9) ---
+      # AI proposes references; API.Bible supplies verbatim text. Without the key
+      # the recommender falls back to the bundled static seed. PD default (WEB).
+      - key: BIBLE_API_KEY
+        sync: false
+      - key: BIBLE_ID
+        value: 9879dbb7cfe39e4d-04
+      - key: BIBLE_DAILY_LIMIT
+        value: "4500"
+
+      # --- Observability (optional) ---
+      # Set to your Sentry DSN to capture backend errors; unset = disabled.
+      - key: SENTRY_DSN
+        sync: false
+
+      # --- Engagement nudges (Phase 5) — optional ---
+      # 1 enables the hourly verse-nudge scheduler. NOTE: the free plan sleeps on
+      # inactivity, so the scheduler won't run reliably — keep 0 unless on a paid
+      # instance (or move nudges to an external cron).
+      - key: ENABLE_NUDGES
+        value: "0"

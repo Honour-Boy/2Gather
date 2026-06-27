@@ -3,9 +3,14 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { userchatsSyncHandler } = require("./userchats");
 const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./verses");
+const { recommendHandler } = require("./verseRecommend");
 const { templatesHandler } = require("./prayerTemplates");
+const { initSentry } = require("./observability");
 
 dotenv.config();
+
+// Error reporting — no-op unless SENTRY_DSN is set (see observability.js).
+const Sentry = initSentry();
 
 const app = express();
 const port = process.env.PORT || 8001;
@@ -45,9 +50,24 @@ app.get("/api/verses", versesHandler);
 app.get("/api/verses/daily", dailyVerseHandler);
 app.get("/api/verses/search", searchVersesHandler);
 
+// AI verse recommendations (Phase 8): POST a free-text prayer request, get 1–3
+// REAL, attributed verses that fit it. The model only ranks candidates we
+// supply — it never writes scripture or a prayer — and the feature degrades to
+// keyword→theme retrieval when no AI key is configured. See verseRecommend.js.
+app.post("/api/verses/recommend", recommendHandler);
+
 // Prayer-template library (Phase 2): curated editable starter prayers by theme.
 // Static + public + cacheable. See prayerTemplates.js.
 app.get("/api/prayer-templates", templatesHandler);
+
+// Centralized error handler (must be last). Reports to Sentry when enabled and
+// returns a safe 500 — never leaks internals to the client.
+app.use((err, req, res, next) => {
+  if (Sentry) Sentry.captureException(err);
+  else console.error("Unhandled error:", err && err.message);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "Internal server error" });
+});
 
 // Start the server only when run directly (not when imported by tests).
 if (require.main === module) {

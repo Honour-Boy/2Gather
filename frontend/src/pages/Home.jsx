@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useUserStore from "@/store/userStore";
 import useModeStore from "@/store/modeStore";
-import { MODES, getMode, themeForMode } from "@/lib/modes";
+import {
+  MODES,
+  getMode,
+  themeForMode,
+  accentForMode,
+  headlineForMode,
+} from "@/lib/modes";
 import { fetchPrayerTemplates } from "@/lib/prayerTemplates";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 import { saveVerseToJournal, savePrayerToJournal } from "@/services/journal";
@@ -21,6 +27,8 @@ export default function Home() {
   const [templates, setTemplates] = useState([]);
   const theme = themeForMode(activeMode);
   const mode = getMode(activeMode);
+  const accent = accentForMode(activeMode);
+  const headline = headlineForMode(activeMode);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -75,6 +83,7 @@ export default function Home() {
           <ModeCard
             label="Just here"
             description="A general space"
+            accent={accentForMode(null)}
             active={!activeMode}
             onClick={clearMode}
           />
@@ -83,6 +92,7 @@ export default function Home() {
               key={m.id}
               label={m.label}
               description={m.description}
+              accent={m.accent}
               active={activeMode === m.id}
               onClick={() => setMode(m.id)}
             />
@@ -91,9 +101,29 @@ export default function Home() {
 
         {/* Tailored space */}
         <section className="mt-8">
-          <h2 className="font-display text-xl font-semibold">
-            {mode ? `Your ${mode.label} space` : "For wherever you are"}
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-5 w-1 rounded-full"
+              style={{ backgroundColor: accent }}
+              aria-hidden="true"
+            />
+            <h2 className="font-display text-xl font-semibold">
+              {mode ? `Your ${mode.label} space` : "For wherever you are"}
+            </h2>
+          </div>
+
+          {/* Per-Mode headline — a reverent line that meets the moment. */}
+          {headline && (
+            <div
+              className="mt-3 rounded-2xl p-3.5"
+              style={{
+                backgroundColor: `${accent}14`,
+                border: `1px solid ${accent}33`,
+              }}
+            >
+              <p className="text-sm text-uni-text leading-relaxed">{headline}</p>
+            </div>
+          )}
 
           <div className="mt-4">
             <VerseOfTheDay
@@ -105,7 +135,10 @@ export default function Home() {
 
           {templates.length > 0 && (
             <div className="mt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-uni-gold mb-2">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-widest mb-2"
+                style={{ color: accent }}
+              >
                 Prayer prompts
               </p>
               <div className="space-y-2.5">
@@ -160,18 +193,32 @@ export default function Home() {
   );
 }
 
-const ModeCard = ({ label, description, active, onClick }) => (
+const ModeCard = ({ label, description, accent, active, onClick }) => (
   <button
     type="button"
     onClick={onClick}
     aria-pressed={active}
+    style={
+      active
+        ? { borderColor: `${accent}99`, backgroundColor: `${accent}14` }
+        : undefined
+    }
     className={`text-left rounded-2xl border p-4 transition-all ${
       active
-        ? "border-uni-gold/60 bg-brand-soft shadow-card"
+        ? "shadow-card"
         : "border-uni-border bg-uni-surface hover:border-uni-gold/40"
     }`}
   >
-    <span className="block text-sm font-semibold text-uni-text">{label}</span>
+    <span className="flex items-center gap-1.5">
+      {active && (
+        <span
+          className="w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ backgroundColor: accent }}
+          aria-hidden="true"
+        />
+      )}
+      <span className="text-sm font-semibold text-uni-text">{label}</span>
+    </span>
     <span className="block text-xs text-uni-muted mt-0.5 leading-snug">
       {description}
     </span>
