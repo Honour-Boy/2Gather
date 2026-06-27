@@ -214,23 +214,23 @@ function parseReferenceList(reply) {
         .trim()
     )
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 20); // recommend uses the first few; curation needs ~12
 }
 
 // One OpenAI-compatible /chat/completions call → an array of reference strings the
 // model chose. Never trusted for scripture TEXT — only the references; we fetch
 // the words from API.Bible.
-async function callProvider(request, cfg) {
+async function callProvider(systemPrompt, userText, maxTokens, cfg) {
   const { data } = await axios.post(
     `${cfg.baseUrl}/chat/completions`,
     {
       model: cfg.model,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Request: "${request}"` },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userText },
       ],
       temperature: 0.3,
-      max_tokens: AI_DEFAULTS.maxOutputTokens,
+      max_tokens: maxTokens,
     },
     {
       headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
@@ -240,17 +240,18 @@ async function callProvider(request, cfg) {
   return parseReferenceList(data?.choices?.[0]?.message?.content || "");
 }
 
-// Default provider client with cost guardrails: capped retries on transient
-// errors, and an immediate circuit-break (no retry) on a bad key / exhausted
-// quota. Works with OpenAI, Groq, OpenRouter, … by swapping AI_BASE_URL/MODEL/KEY.
-async function defaultLlmRank(request) {
+// Shared, guardrailed provider call → reference strings. Capped retries on
+// transient errors, immediate circuit-break (no retry) on a bad key / exhausted
+// quota. Used by both the recommender and the daily-curation (themed sets + VOTD)
+// so they share ONE budget + breaker. Caller gates on aiAvailable()/spends budget.
+async function askProvider(systemPrompt, userText, maxTokens = AI_DEFAULTS.maxOutputTokens) {
   const cfg = aiConfig();
   if (!cfg.apiKey) throw new Error("AI disabled (no AI_API_KEY)");
 
   let attempt = 0;
   for (;;) {
     try {
-      return await callProvider(request, cfg);
+      return await callProvider(systemPrompt, userText, maxTokens, cfg);
     } catch (err) {
       const status = err && err.response && err.response.status;
       // Auth/quota: don't retry, and stop calling for a while.
@@ -263,6 +264,11 @@ async function defaultLlmRank(request) {
       await sleep(250 * attempt); // small linear backoff
     }
   }
+}
+
+// The recommender's provider call: the model names references for a request.
+async function defaultLlmRank(request) {
+  return askProvider(SYSTEM_PROMPT, `Request: "${request}"`);
 }
 
 // Resolve a reference → verbatim text. Prefer API.Bible (the whole Bible); fall
@@ -425,6 +431,7 @@ module.exports = {
   fallbackRank,
   parseReferenceList,
   resolveReference,
+  askProvider,
   aiConfig,
   aiAvailable,
   budgetRemaining,
