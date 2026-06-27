@@ -3,6 +3,7 @@ import useUserStore from "@/store/userStore";
 import { VERSE_THEMES } from "@/lib/modes";
 import { fetchVerses } from "@/lib/verses";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
+import VerseFinder from "@/components/verses/VerseFinder";
 import { saveVerseToJournal } from "@/services/journal";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
@@ -76,6 +77,11 @@ export default function Verses() {
 
         <div className="mt-5">
           <VerseOfTheDay onSave={uid ? save : undefined} />
+        </div>
+
+        {/* Describe a prayer request → get matching verses (Phase 8). */}
+        <div className="mt-4">
+          <VerseFinder />
         </div>
 
         {/* Search */}
