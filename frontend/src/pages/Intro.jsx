@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
+import BrandMark from "@/components/ui/BrandMark";
 
 function Intro() {
   const navigate = useNavigate();
@@ -17,11 +18,7 @@ function Intro() {
       <header className="sticky top-0 z-20 backdrop-blur-md bg-uni-bg/80 border-b border-uni-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center shadow-bubble">
-              <span className="text-uni-on-accent font-display font-bold text-lg">
-                2
-              </span>
-            </div>
+            <BrandMark className="w-9 h-9" />
             <span className="text-lg font-display font-semibold tracking-tight">
               2Gather
             </span>
@@ -54,7 +51,9 @@ function Intro() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24 pb-16 text-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 md:pt-20 pb-16 text-center">
+        <BrandMark className="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-6 shadow-card" />
+
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-uni-surface border border-uni-border text-xs font-medium text-uni-muted mb-6">
           <CrossIcon className="w-3.5 h-3.5 text-uni-gold" />
           Faith-based togetherness
@@ -186,11 +185,7 @@ function Intro() {
       <footer className="border-t border-uni-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-uni-muted">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center">
-              <span className="text-uni-on-accent font-display font-bold text-xs">
-                2
-              </span>
-            </div>
+            <BrandMark className="w-6 h-6 rounded-md" />
             <span>© {new Date().getFullYear()} 2Gather</span>
           </div>
           <span className="text-uni-muted">Pray together, wherever you are.</span>
