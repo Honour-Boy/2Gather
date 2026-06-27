@@ -6,6 +6,7 @@ import { fetchVerses, searchVerses as searchVersesApi } from "@/lib/verses";
 import VerseOfTheDay from "@/components/verses/VerseOfTheDay";
 import VerseFinder from "@/components/verses/VerseFinder";
 import TranslationPicker from "@/components/ui/TranslationPicker";
+import ShareButton from "@/components/chat/ShareButton";
 import { saveVerseToJournal } from "@/services/journal";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
@@ -163,6 +164,13 @@ export default function Verses() {
                     >
                       {copied === v.id ? "Copied!" : "Copy"}
                     </button>
+                    <ShareButton
+                      text={`“${v.text}” — ${v.reference} (${v.translation || "WEB"})`}
+                      kind="prayer"
+                      currentUser={currentUser}
+                      preview={v.text}
+                      label="Send this verse to a chat"
+                    />
                     {uid && (
                       <button
                         onClick={() => save(v)}
