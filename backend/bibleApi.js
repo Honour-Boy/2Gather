@@ -11,7 +11,7 @@ const axios = require("axios");
 const { parseReference, humanBook } = require("./bibleRef");
 
 const DEFAULTS = {
-  baseUrl: "https://api.scripture.api.bible/v1",
+  baseUrl: "https://rest.api.bible/v1",
   // World English Bible (public domain). Confirm/override via `GET /bibles`
   // (listBibles) and the BIBLE_ID env var if this id ever changes.
   bibleId: "9879dbb7cfe39e4d-04",
