@@ -38,7 +38,7 @@ const ForgotPassword = () => {
     <AuthLayout title={"Forgot your password?"} subtitle={"Enter the email tied to your account and we'll send you a reset link."}>
       {sent ? (
         <div className="flex flex-col items-center text-center py-2">
-          <div className="w-14 h-14 rounded-2xl bg-brand-soft border border-uni-lime/20 flex items-center justify-center text-uni-lime mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-brand-soft border border-uni-gold/20 flex items-center justify-center text-uni-gold mb-4">
             <svg
               width="24"
               height="24"
@@ -56,7 +56,7 @@ const ForgotPassword = () => {
           <h2 className="text-lg font-semibold text-uni-text">
             {"Check your inbox"}
           </h2>
-          <p className="text-sm text-uni-muted mt-1">
+          <p className="text-sm text-uni-muted mt-1.5 leading-relaxed">
             {"We've sent a password reset link to"} <br />
             <span className="text-uni-text">{email}</span>
           </p>
@@ -89,7 +89,7 @@ const ForgotPassword = () => {
             {"Remembered it?"}{" "}
             <Link
               to="/login"
-              className="text-uni-cyan hover:text-uni-lime font-medium"
+              className="text-uni-blue hover:text-uni-gold font-semibold"
             >
               {"Back to sign in"}
             </Link>
