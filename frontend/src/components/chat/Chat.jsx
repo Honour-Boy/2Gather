@@ -46,6 +46,18 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   const modeTheme = themeForMode(activeMode);
   const endRef = useRef(null);
   const lastMsgIdRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Auto-grow the composer like WhatsApp: the textarea grows with the wrapped
+  // text up to a max height, then scrolls (so long messages stay fully visible
+  // while typing). Recomputed whenever the text changes (incl. clearing on send).
+  const COMPOSER_MAX_H = 128; // ~6 lines
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_H)}px`;
+  }, [text]);
 
   // Auto-scroll to the newest message — but only when a new message actually
   // arrives (newest id changes), so loading older history doesn't yank the
@@ -282,9 +294,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
       {/* Input bar */}
       <div className="border-t border-uni-border bg-uni-bg px-3 md:px-6 py-3 md:py-4">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="flex-1 flex items-center gap-2 bg-uni-surface border border-uni-border rounded-full pl-4 pr-2 py-1.5 focus-within:border-uni-gold/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
-            <input
-              type="text"
+          <div className="flex-1 flex items-end gap-2 bg-uni-surface border border-uni-border rounded-3xl pl-4 pr-2 py-1.5 focus-within:border-uni-gold/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
+            <textarea
+              ref={inputRef}
+              rows={1}
               placeholder={
                 disabled ? "You cannot send a message" : "Type your message…"
               }
@@ -295,8 +308,9 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
                 if (e.target.value === "") setPendingKind(null);
               }}
               disabled={disabled}
-              className="flex-1 bg-transparent border-none outline-none text-sm md:text-[15px] text-uni-text placeholder:text-uni-muted disabled:opacity-50"
+              className="flex-1 bg-transparent border-none outline-none resize-none uni-scroll text-sm md:text-[15px] leading-relaxed text-uni-text placeholder:text-uni-muted disabled:opacity-50 py-1.5"
               onKeyDown={(e) => {
+                // Enter sends; Shift+Enter inserts a newline.
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSend();
