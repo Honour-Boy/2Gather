@@ -1,0 +1,10 @@
+# Keep the backend image lean + secret-free. Only backend/ is built (see Dockerfile).
+**/node_modules
+**/.env
+**/.env.*
+backend/config/serviceAccount.json
+backend/config/unicomm.json
+frontend
+docs
+.git
+**/*.log
