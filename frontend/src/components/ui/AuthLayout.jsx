@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandMark from "@/components/ui/BrandMark";
 
 // Shared shell for the auth screens (login, register, forgot password):
 // centered card on the gradient background, with the 2Gather home link.
@@ -14,10 +15,8 @@ const AuthLayout = ({ title, subtitle, children, wide = false }) => (
         wide ? "max-w-lg" : "max-w-md"
       } bg-uni-surface/85 backdrop-blur-xl border border-uni-border rounded-2xl shadow-card p-7 sm:p-9 animate-fade-in-up`}
     >
-      <Link to="/" className="inline-flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shadow-bubble">
-          <span className="text-uni-on-accent font-display font-bold text-sm">2</span>
-        </div>
+      <Link to="/" className="inline-flex items-center gap-2.5 mb-8">
+        <BrandMark className="w-10 h-10" />
         <span className="font-display font-semibold tracking-tight">2Gather</span>
       </Link>
 

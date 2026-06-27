@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import LogoutNow from "@/components/common/LogoutNow";
+import BrandMark from "@/components/ui/BrandMark";
 
 // Persistent app shell: a desktop left rail + a mobile bottom tab bar, with the
 // active screen rendered in a single scroll area between them. This is the home
@@ -18,9 +19,9 @@ export default function AppShell({ children }) {
       {/* Desktop left rail */}
       <nav className="hidden md:flex w-20 shrink-0 flex-col items-center justify-between border-r border-uni-border py-5">
         <div className="flex flex-col items-center gap-1.5">
-          <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-bubble mb-3">
-            <span className="text-uni-on-accent font-display font-bold text-lg">2</span>
-          </div>
+          <NavLink to="/home" aria-label="2Gather home" className="mb-3">
+            <BrandMark className="w-10 h-10" />
+          </NavLink>
           {TABS.map((t) => (
             <RailItem key={t.to} {...t} />
           ))}
