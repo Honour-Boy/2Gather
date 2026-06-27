@@ -1,0 +1,6 @@
+# 2Gather — production robots policy.
+# Only the marketing/auth surface is public; the signed-in app is behind auth.
+User-agent: *
+Allow: /
+
+Sitemap: https://2gather.vercel.app/sitemap.xml

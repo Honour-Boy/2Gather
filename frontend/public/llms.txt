@@ -1,0 +1,32 @@
+# 2Gather
+
+> A faith-based togetherness app: real-time prayer chat, themed Bible verses, and
+> life-situation "modes" that bring Scripture and prayer to the moment you're in.
+> You were never meant to pray alone.
+
+2Gather is an English-language web app for praying with others. It pairs a
+real-time prayer chat with a curated, attributed Bible-verse engine (World English
+Bible, public domain) and five life-situation Modes — Travel, Interview Prep,
+Business Pitch, Promotion & Opportunity, and Downtime & Recovery — each of which
+re-scopes the verse of the day and prayer prompts to what the user is walking
+through.
+
+## Principles
+
+- Scripture is always quoted verbatim and attributed — never paraphrased or
+  invented. AI is used only to recommend real verses from the curated corpus for
+  a user's prayer request; it never writes the prayer.
+- Reverent and non-denominational in tone.
+
+## Key pages
+
+- /: Landing — what 2Gather is and why.
+- /login, /register: Account access.
+
+## Features
+
+- Prayer chat: send prayers and verses to others in real time.
+- Verse engine: verse of the day, browse/search by theme, "find verses for what
+  you're praying about".
+- Modes: pick what you're walking through; verses + prayers re-scope to it.
+- Journal: save verses and prayers with reflection notes.
