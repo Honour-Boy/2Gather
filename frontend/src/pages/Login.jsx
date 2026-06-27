@@ -41,7 +41,7 @@ function Login() {
       // No backend round-trip needed.
       await signInWithEmailAndPassword(auth, email, password);
       notify.success("Signed in. Redirecting…");
-      navigate("/chat");
+      navigate("/home");
     } catch (error) {
       console.error(error);
       notify.error("Invalid email or password.");
@@ -78,7 +78,7 @@ function Login() {
       if (!userData?.username) {
         navigate("/create-profile");
       } else {
-        navigate("/chat");
+        navigate("/home");
       }
     } catch (error) {
       console.error(error);
@@ -129,13 +129,13 @@ function Login() {
           <label className="flex items-center gap-2 text-uni-muted cursor-pointer select-none">
             <input
               type="checkbox"
-              className="accent-uni-lime w-4 h-4 rounded"
+              className="accent-uni-gold w-4 h-4 rounded"
             />
             {"Remember me"}
           </label>
           <Link
             to="/forgot-password"
-            className="text-uni-cyan hover:text-uni-lime font-medium"
+            className="text-uni-blue hover:text-uni-gold font-semibold"
           >
             {"Forgot password?"}
           </Link>
@@ -159,7 +159,7 @@ function Login() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={googleLoading}
-          className="auth-secondary-btn text-black"
+          className="auth-secondary-btn"
         >
           {googleLoading ? (
             <Spinner />
@@ -175,7 +175,7 @@ function Login() {
           {"New to 2Gather?"}{" "}
           <Link
             to="/register"
-            className="text-uni-cyan hover:text-uni-lime font-medium"
+            className="text-uni-blue hover:text-uni-gold font-semibold"
           >
             {"Create an account"}
           </Link>

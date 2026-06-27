@@ -5,7 +5,7 @@ const PublicRouter = ({ children }) => {
   const { allowUser } = useAuth();
 
   if (allowUser) {
-    return <Navigate to={"/chat"} />;
+    return <Navigate to={"/home"} />;
   }
 
   return children;

@@ -22,7 +22,7 @@ function Intro() {
                 2
               </span>
             </div>
-            <span className="text-lg font-display font-bold tracking-tight">
+            <span className="text-lg font-display font-semibold tracking-tight">
               2Gather
             </span>
           </div>
@@ -60,7 +60,7 @@ function Intro() {
           Faith-based togetherness
         </div>
 
-        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] max-w-4xl mx-auto">
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.1] max-w-4xl mx-auto">
           You were never meant to{" "}
           <span className="bg-brand bg-clip-text text-transparent">
             pray alone
@@ -98,7 +98,7 @@ function Intro() {
       {/* Why 2Gather */}
       <section id="why" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
             A few reasons people gather here
           </h2>
           <p className="mt-3 text-uni-muted max-w-xl mx-auto">
@@ -128,7 +128,7 @@ function Intro() {
       {/* How it works */}
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
             Simple enough to start today
           </h2>
           <p className="mt-3 text-uni-muted max-w-xl mx-auto">
@@ -158,7 +158,7 @@ function Intro() {
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="rounded-3xl border border-uni-gold/20 bg-brand-soft p-10 md:p-14 text-center">
           <CrossIcon className="w-7 h-7 text-uni-gold mx-auto mb-4" />
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
             You don&apos;t have to pray alone tonight
           </h2>
           <p className="mt-3 text-uni-muted max-w-lg mx-auto">
@@ -212,8 +212,8 @@ const FeatureCard = ({ icon, title, description }) => (
 
 const StepCard = ({ n, title, body }) => (
   <div className="p-6 rounded-2xl border border-uni-border bg-uni-surface hover:border-uni-gold/30 transition-colors">
-    <span className="font-display text-xs font-bold tracking-widest text-uni-gold">
-      STEP {n}
+    <span className="text-[11px] font-semibold uppercase tracking-widest text-uni-gold">
+      Step {n}
     </span>
     <h3 className="mt-2 text-lg font-semibold text-uni-text">{title}</h3>
     <p className="mt-1.5 text-sm text-uni-muted leading-relaxed">{body}</p>
