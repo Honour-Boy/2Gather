@@ -51,12 +51,14 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   // Auto-grow the composer like WhatsApp: the textarea grows with the wrapped
   // text up to a max height, then scrolls (so long messages stay fully visible
   // while typing). Recomputed whenever the text changes (incl. clearing on send).
-  const COMPOSER_MAX_H = 128; // ~6 lines
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
+    // Cap shorter on phones (~3 lines) than on desktop (~6) so the growing
+    // composer doesn't swallow a small screen.
+    const maxH = window.innerWidth < 640 ? 80 : 128;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_H)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
   }, [text]);
 
   // Auto-scroll to the newest message — but only when a new message actually
