@@ -13,7 +13,6 @@ const {
 } = require("../verseRecommend");
 
 const CORPUS_IDS = new Set(VERSES.map((v) => v.id));
-const TEXT_BY_ID = new Map(VERSES.map((v) => [v.id, v.text]));
 
 // Minimal Express req/res doubles for handler tests.
 const makeRes = () => {
@@ -27,6 +26,7 @@ const makeReq = (body, ip = "1.1.1.1") => ({ body, ip, headers: {} });
 
 beforeEach(() => {
   delete process.env.AI_API_KEY; // guarantee the offline/fallback path
+  delete process.env.BIBLE_API_KEY; // API.Bible disabled → seed-resolution path
   _resetState();
 });
 
@@ -40,50 +40,58 @@ describe("detectThemes", () => {
 });
 
 describe("recommendVerses — grounding", () => {
-  test("returns only verses from our corpus (LLM can't smuggle in ids)", async () => {
-    const llmRank = async () => ["not-a-real-id", "isa-41-10", "also-fake"];
+  test("returns only verses whose text resolves through the Bible source (invented refs dropped)", async () => {
+    const llmRank = async () => ["Fakebook 9:9", "Isaiah 41:10", "Madeup 1:1"];
+    const resolve = async (ref) =>
+      ref === "Isaiah 41:10"
+        ? { id: "ISA.41.10", reference: ref, text: "Don’t you be afraid, for I am with you." }
+        : null; // an invented reference resolves to nothing → dropped
     const { verses, source } = await recommendVerses(
       { request: "I'm scared about my interview" },
-      { llmRank }
+      { llmRank, resolve }
     );
     expect(source).toBe("llm");
-    expect(verses.length).toBeGreaterThan(0);
-    for (const v of verses) {
-      expect(CORPUS_IDS.has(v.id)).toBe(true);
-      expect(v.text).toBe(TEXT_BY_ID.get(v.id)); // verbatim from our data
-    }
-    expect(verses.some((v) => v.id === "not-a-real-id" || v.id === "also-fake")).toBe(false);
+    expect(verses).toHaveLength(1);
+    expect(verses[0]).toMatchObject({ id: "ISA.41.10", reference: "Isaiah 41:10" });
+    expect(verses[0].text).toMatch(/afraid/); // text came from the resolver, not the model
   });
 
   test("caps results to at most 3", async () => {
-    const llmRank = async (_req, candidates) => candidates.map((c) => c.id); // greedily pick all
-    const { verses } = await recommendVerses(
-      { request: "anxious and afraid" },
-      { llmRank }
-    );
+    const llmRank = async () => ["A 1:1", "B 2:2", "C 3:3", "D 4:4", "E 5:5"];
+    const resolve = async (ref) => ({ id: ref.replace(/\W/g, ""), reference: ref, text: "text " + ref });
+    const { verses } = await recommendVerses({ request: "anxious and afraid" }, { llmRank, resolve });
     expect(verses.length).toBeLessThanOrEqual(3);
   });
 
-  test("offers the LLM the whole corpus so it can match intent across themes", async () => {
-    // "tired of life" keyword-maps to 'rest', but the model must be free to pick
-    // an encouragement verse from another theme — so it sees the full corpus, not
-    // just the keyword-matched 'rest' pool.
-    let offered = [];
-    const llmRank = async (_req, candidates) => {
-      offered = candidates.map((c) => c.id);
-      return ["phi-4-13"]; // Philippians 4:13 (courage) — absent from the 'rest' pool
-    };
+  test("recommends real verses from outside the static seed (whole Bible)", async () => {
+    // Jeremiah 29:11 isn't in the 25-verse seed; with the whole Bible it can surface.
+    const llmRank = async () => ["Jeremiah 29:11"];
+    const resolve = async (ref) => ({
+      id: "JER.29.11",
+      reference: ref,
+      text: "For I know the plans I have for you, says Yahweh…",
+    });
     const { verses, source } = await recommendVerses(
-      { request: "I am tired of life" },
-      { llmRank }
+      { request: "I feel hopeless about my future" },
+      { llmRank, resolve }
     );
     expect(source).toBe("llm");
-    expect(verses.map((v) => v.id)).toContain("phi-4-13");
-    expect(offered).toContain("phi-4-13");
-    expect(offered.length).toBe(VERSES.length);
+    expect(verses[0].reference).toBe("Jeremiah 29:11");
+    expect(CORPUS_IDS.has("JER.29.11")).toBe(false); // genuinely beyond the seed
+  });
+
+  test("resolveReference falls back to the static seed when API.Bible is unavailable", async () => {
+    // No BIBLE_API_KEY → API.Bible disabled; a seed reference the model names still
+    // resolves from our bundled text (uses the real tiered resolver, no inject).
+    const llmRank = async () => ["2 Timothy 1:7"];
+    const { verses, source } = await recommendVerses({ request: "I need courage" }, { llmRank });
+    expect(source).toBe("llm");
+    expect(verses[0].id).toBe("2ti-1-7");
+    expect(CORPUS_IDS.has("2ti-1-7")).toBe(true);
   });
 
   test("never returns generated prose — only {id, reference, text, themes}", async () => {
+    // No key + no injected ranker → the static-seed fallback path.
     const { verses } = await recommendVerses({ request: "thankful for a new job" });
     for (const v of verses) {
       expect(Object.keys(v).sort()).toEqual(["id", "reference", "text", "themes"]);

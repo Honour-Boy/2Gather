@@ -71,7 +71,7 @@ describe("defaultLlmRank retries + breaker", () => {
     process.env.AI_MAX_RETRIES = "1"; // → 2 attempts total
     axios.post.mockRejectedValue(httpError(503));
 
-    await expect(defaultLlmRank("anxious", [{ id: "x", reference: "R", text: "t" }])).rejects.toBeTruthy();
+    await expect(defaultLlmRank("anxious")).rejects.toBeTruthy();
     expect(axios.post).toHaveBeenCalledTimes(2);
     expect(breakerOpen()).toBe(false); // transient errors don't trip the breaker
   });
@@ -81,7 +81,7 @@ describe("defaultLlmRank retries + breaker", () => {
     process.env.AI_MAX_RETRIES = "2";
     axios.post.mockRejectedValue(httpError(401));
 
-    await expect(defaultLlmRank("anxious", [{ id: "x", reference: "R", text: "t" }])).rejects.toBeTruthy();
+    await expect(defaultLlmRank("anxious")).rejects.toBeTruthy();
     expect(axios.post).toHaveBeenCalledTimes(1);
     expect(breakerOpen()).toBe(true);
     expect(aiAvailable()).toBe(false); // breaker keeps us from calling again
@@ -92,7 +92,7 @@ describe("defaultLlmRank retries + breaker", () => {
     process.env.AI_MAX_RETRIES = "2";
     axios.post.mockRejectedValue(httpError(429, { error: { code: "insufficient_quota" } }));
 
-    await expect(defaultLlmRank("anxious", [{ id: "x", reference: "R", text: "t" }])).rejects.toBeTruthy();
+    await expect(defaultLlmRank("anxious")).rejects.toBeTruthy();
     expect(axios.post).toHaveBeenCalledTimes(1);
     expect(breakerOpen()).toBe(true);
   });
@@ -106,15 +106,19 @@ describe("defaultLlmRank retries + breaker", () => {
 describe("recommendVerses honours the guardrails", () => {
   test("uses the LLM when available and spends one budget unit", async () => {
     process.env.AI_API_KEY = "sk-test";
-    axios.post.mockResolvedValue({ data: { choices: [{ message: { content: "2" } }] } });
+    // OpenAI returns a reference; resolution is injected (no API.Bible call needed).
+    axios.post.mockResolvedValue({ data: { choices: [{ message: { content: "Isaiah 41:10" } }] } });
+    const resolve = async (ref) => ({ id: "ISA.41.10", reference: ref, text: "Don’t be afraid…" });
 
     const before = budgetRemaining();
-    const { verses, source } = await recommendVerses({ request: "I'm anxious about my interview" });
+    const { verses, source } = await recommendVerses(
+      { request: "I'm anxious about my interview" },
+      { resolve }
+    );
 
     expect(source).toBe("llm");
-    expect(axios.post).toHaveBeenCalledTimes(1);
-    expect(verses.length).toBeGreaterThan(0);
-    for (const v of verses) expect(CORPUS_IDS.has(v.id)).toBe(true);
+    expect(axios.post).toHaveBeenCalledTimes(1); // real OpenAI call path exercised
+    expect(verses[0].reference).toBe("Isaiah 41:10");
     expect(budgetRemaining()).toBe(before - 1);
   });
 

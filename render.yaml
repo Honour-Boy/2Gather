@@ -32,6 +32,16 @@ services:
       - key: AI_DAILY_LIMIT
         value: "200"
 
+      # --- Bible text source: API.Bible (Phase 9) ---
+      # AI proposes references; API.Bible supplies verbatim text. Without the key
+      # the recommender falls back to the bundled static seed. PD default (WEB).
+      - key: BIBLE_API_KEY
+        sync: false
+      - key: BIBLE_ID
+        value: 9879dbb7cfe39e4d-04
+      - key: BIBLE_DAILY_LIMIT
+        value: "4500"
+
       # --- Observability (optional) ---
       # Set to your Sentry DSN to capture backend errors; unset = disabled.
       - key: SENTRY_DSN
