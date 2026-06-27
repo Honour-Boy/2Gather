@@ -35,7 +35,9 @@ test("passes the theme through to the data client", async () => {
 
   render(<VerseOfTheDay theme="rest" />);
 
-  await waitFor(() => expect(fetchDailyVerse).toHaveBeenCalledWith({ theme: "rest" }));
+  await waitFor(() =>
+    expect(fetchDailyVerse).toHaveBeenCalledWith({ theme: "rest", translation: "WEB" })
+  );
 });
 
 test("renders nothing if the request fails (ambient, never blocking)", async () => {

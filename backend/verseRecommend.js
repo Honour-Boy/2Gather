@@ -15,6 +15,7 @@ const axios = require("axios");
 const { THEMES, TRANSLATION, VERSES, getVersesByTheme } = require("./verses");
 const bibleApi = require("./bibleApi");
 const { parseReference } = require("./bibleRef");
+const { bibleIdFor } = require("./translations");
 
 // --- Keyword → theme mapping (the no-LLM path, and how we pick candidates) ---
 // A request can hit several themes (e.g. "anxious" → courage + peace); we score
@@ -58,6 +59,9 @@ const SUPPORT_MESSAGE =
 const MAX_REQUEST_LEN = 500;
 const MAX_CANDIDATES = 12;
 const MAX_RESULTS = 3;
+// The recommender returns a larger set (the client reveals 3 at a time, "show
+// more", with no new AI call). The fallback/crisis paths still return MAX_RESULTS.
+const RECOMMEND_MAX = 9;
 // When nothing matches, lean on broadly steadying themes so we always return verses.
 const DEFAULT_THEMES = ["peace", "courage", "journey-and-trust"];
 
@@ -102,10 +106,16 @@ function fallbackRank(candidates, themes) {
 // Shape a verse for the API response. Text is always from an authoritative source
 // (API.Bible or the static seed) — never AI-authored. `themes` may be empty for
 // whole-Bible results that aren't tied to a curated theme.
-function shape(list) {
+function shape(list, cap = MAX_RESULTS) {
   return list
-    .slice(0, MAX_RESULTS)
-    .map((v) => ({ id: v.id, reference: v.reference, text: v.text, themes: v.themes || [] }));
+    .slice(0, cap)
+    .map((v) => ({
+      id: v.id,
+      reference: v.reference,
+      text: v.text,
+      themes: v.themes || [],
+      ...(v.translation ? { translation: v.translation } : {}),
+    }));
 }
 
 // --- AI config + cost guardrails ---------------------------------------------
@@ -136,9 +146,9 @@ const SYSTEM_PROMPT =
   "understand what they are really going through — the emotion and situation beneath " +
   'the words, not just literal keywords. For example, "I\'m tired of life" is ' +
   "discouragement or hopelessness (offer hope and strength), not physical tiredness. " +
-  "Choose the 1-3 real Bible verses (from anywhere in Scripture) that speak most " +
-  "directly to that underlying need. Reply with ONLY their references separated by " +
-  'semicolons (e.g. "John 16:33; Philippians 4:13; Isaiah 41:10"). Do NOT quote the ' +
+  "Choose up to 9 real Bible verses (from anywhere in Scripture) that speak to that " +
+  "underlying need, the most fitting first. Reply with ONLY their references separated " +
+  'by semicolons (e.g. "John 16:33; Philippians 4:13; Isaiah 41:10"). Do NOT quote the ' +
   "verse text, do not write a prayer, do not add any commentary.";
 
 function intEnv(name, def, min, max) {
@@ -266,9 +276,10 @@ async function askProvider(systemPrompt, userText, maxTokens = AI_DEFAULTS.maxOu
   }
 }
 
-// The recommender's provider call: the model names references for a request.
+// The recommender's provider call: the model names references for a request
+// (up to ~9, so the client can reveal them 3 at a time).
 async function defaultLlmRank(request) {
-  return askProvider(SYSTEM_PROMPT, `Request: "${request}"`);
+  return askProvider(SYSTEM_PROMPT, `Request: "${request}"`, 120);
 }
 
 // Resolve a reference → verbatim text. Prefer API.Bible (the whole Bible); fall
@@ -276,26 +287,27 @@ async function defaultLlmRank(request) {
 // Bible key is set (or if API.Bible is briefly down). Never model-authored text.
 const refKey = (s) => String(s).toLowerCase().replace(/\s+/g, "");
 const SEED_BY_REF = new Map(VERSES.map((v) => [refKey(v.reference), v]));
-async function resolveReference(ref) {
-  const viaApi = await bibleApi.getPassage(ref);
+async function resolveReference(ref, bibleId) {
+  const viaApi = await bibleApi.getPassage(ref, bibleId);
   if (viaApi) return viaApi;
   const parsed = parseReference(ref);
   const seed = SEED_BY_REF.get(refKey(parsed ? parsed.reference : ref));
   return seed
-    ? { id: seed.id, reference: seed.reference, text: seed.text, themes: seed.themes }
+    ? { id: seed.id, reference: seed.reference, text: seed.text, themes: seed.themes, translation: TRANSLATION }
     : null;
 }
 
 // Core logic (no Express) so it's unit-testable. `deps.llmRank` lets tests inject
 // a mock provider; in production it defaults to the OpenAI-compatible client.
-async function recommendVerses({ request, theme } = {}, deps = {}) {
+// `bibleId` (optional) picks the translation the text is fetched in.
+async function recommendVerses({ request, theme, bibleId } = {}, deps = {}) {
   const text = String(request || "").trim();
 
   // Safety first: never feed a crisis message to the model; redirect with care.
   if (CRISIS_PATTERN.test(text)) {
     const comfort = buildCandidates(["peace", "rest"]);
     return {
-      verses: shape(comfort),
+      verses: shape(comfort, MAX_RESULTS),
       matchedThemes: ["peace", "rest"],
       source: "safety",
       support: SUPPORT_MESSAGE,
@@ -319,28 +331,44 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
   // (references) and/or `deps.resolve`; in production we only call the model when
   // its guardrails allow it (key, breaker, budget) and spend one unit.
   let picked = null;
-  const llmRank = deps.llmRank || defaultLlmRank;
-  const resolveRef = deps.resolve || resolveReference;
-  const useReal = !deps.llmRank && aiAvailable();
-  if (deps.llmRank || useReal) {
-    if (useReal) noteLlmCall();
+  const resolveRef = deps.resolve || ((ref) => resolveReference(ref, bibleId));
+
+  // Get the references: tests inject a ranker; otherwise reuse the cached refs for
+  // this request (no AI call), or make ONE guardrailed AI call and cache them.
+  let refs = null;
+  if (deps.llmRank) {
     try {
-      const refs = await llmRank(text);
-      const resolved = [];
-      for (const ref of Array.isArray(refs) ? refs : []) {
-        if (resolved.length >= MAX_RESULTS) break;
-        const v = await resolveRef(ref);
-        if (v && v.text && !resolved.some((r) => r.id === v.id)) resolved.push(v);
-      }
-      if (resolved.length) picked = resolved;
+      refs = await deps.llmRank(text);
     } catch {
-      picked = null; // provider/API error → graceful fallback
+      refs = null;
     }
+  } else {
+    const rk = refCacheKey(text, theme);
+    refs = refGet(rk); // identical request → reuse, no tokens spent
+    if (!refs && aiAvailable()) {
+      noteLlmCall();
+      try {
+        refs = await defaultLlmRank(text);
+        refSet(rk, refs);
+      } catch {
+        refs = null;
+      }
+    }
+  }
+
+  if (Array.isArray(refs) && refs.length) {
+    const resolved = [];
+    for (const ref of refs) {
+      if (resolved.length >= RECOMMEND_MAX) break; // a larger set; client pages 3 at a time
+      const v = await resolveRef(ref);
+      if (v && v.text && !resolved.some((r) => r.id === v.id)) resolved.push(v);
+    }
+    if (resolved.length) picked = resolved;
   }
 
   const chosen = picked || fallbackRank(fallbackCandidates, usedThemes);
   return {
-    verses: shape(chosen),
+    verses: shape(chosen, RECOMMEND_MAX),
     matchedThemes: usedThemes,
     source: picked ? "llm" : "fallback",
   };
@@ -360,18 +388,30 @@ function rateLimited(ip) {
   return rec.count > RATE.max;
 }
 
-const CACHE_TTL = 10 * 60_000;
-const CACHE_MAX = 500;
-const cache = new Map(); // key -> { at, value }
-function cacheKey(request, theme) {
-  return `${theme || ""}::${request.toLowerCase().replace(/\s+/g, " ").trim()}`;
+// Cache the AI's chosen REFERENCES (verse ids only — translation-independent and
+// safe to store, unlike licensed text) keyed by request+theme. An identical
+// request reuses these → NO new AI call and no tokens spent. Long TTL because the
+// references that fit a request don't change; the text is resolved per-request in
+// the chosen translation (public-domain text is cached in bibleApi, licensed is not).
+const REF_CACHE_TTL = 24 * 60 * 60_000;
+const REF_CACHE_MAX = 1000;
+const refCache = new Map(); // key -> { at, refs }
+const refCacheKey = (request, theme) =>
+  `${theme || ""}::${String(request).toLowerCase().replace(/\s+/g, " ").trim()}`;
+function refGet(key) {
+  const r = refCache.get(key);
+  return r && Date.now() - r.at < REF_CACHE_TTL ? r.refs : null;
+}
+function refSet(key, refs) {
+  if (refCache.size >= REF_CACHE_MAX) refCache.clear();
+  refCache.set(key, { at: Date.now(), refs });
 }
 
 // Test helper: clear the limiter + cache + AI budget/breaker so suites don't leak
 // state into each other.
 function _resetState() {
   hits.clear();
-  cache.clear();
+  refCache.clear();
   budget.day = "";
   budget.count = 0;
   breakerUntil = 0;
@@ -398,20 +438,13 @@ async function recommendHandler(req, res) {
   if (theme !== undefined && (typeof theme !== "string" || !THEMES.includes(theme))) {
     return res.status(400).json({ error: "unknown theme", themes: THEMES });
   }
-
-  const trimmed = request.trim();
-  const key = cacheKey(trimmed, theme);
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.at < CACHE_TTL) {
-    return res.json(cached.value);
-  }
+  const bibleId = bibleIdFor(body.translation); // → default (WEB) for unknown/unset
 
   try {
-    const result = await recommendVerses({ request: trimmed, theme });
-    const payload = { translation: TRANSLATION, ...result };
-    if (cache.size >= CACHE_MAX) cache.clear(); // crude bound; fine at this scale
-    cache.set(key, { at: Date.now(), value: payload });
-    return res.json(payload);
+    const result = await recommendVerses({ request: request.trim(), theme, bibleId });
+    // Identical requests are served from the reference cache inside recommendVerses
+    // (no new AI call); public-domain verse text is cached in bibleApi.
+    return res.json({ translation: TRANSLATION, ...result });
   } catch (err) {
     console.warn("recommend:", err && err.message);
     return res
