@@ -19,6 +19,7 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
+    "@sentry/node": "^10.62.0",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
