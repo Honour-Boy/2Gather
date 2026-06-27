@@ -3,4 +3,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://2gather.vercel.app/sitemap.xml
+Sitemap: https://2gather-app.vercel.app/sitemap.xml
