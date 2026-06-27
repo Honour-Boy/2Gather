@@ -82,7 +82,7 @@ const Profile = () => {
           <div>
             <div className="mb-4">
               <label
-                className="block text-sm font-bold mb-2 text-left"
+                className="block text-xs font-semibold text-uni-muted mb-1.5 uppercase tracking-wider text-left"
                 htmlFor="username"
               >
                 {"Username"} *
@@ -93,13 +93,13 @@ const Profile = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="@ex123"
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-gold/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               />
             </div>
             <div className="mb-4 date-picker-container">
               <label
-                className="block text-sm font-bold mb-2 text-left"
+                className="block text-xs font-semibold text-uni-muted mb-1.5 uppercase tracking-wider text-left"
                 htmlFor="dob"
               >
                 {"Date of Birth"} *
@@ -109,13 +109,13 @@ const Profile = () => {
                 id="dob"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all accent-uni-lime calendar-icon-white"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-gold/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all accent-uni-gold calendar-icon-white"
                 required
               />
             </div>
             <div className="mb-4">
               <label
-                className="block text-sm font-bold mb-2 text-left"
+                className="block text-xs font-semibold text-uni-muted mb-1.5 uppercase tracking-wider text-left"
                 htmlFor="bio"
               >
                 {"Bio"} *
@@ -124,7 +124,7 @@ const Profile = () => {
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all max-h-24 resize-none"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-gold/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all max-h-24 resize-none"
                 required
               />
             </div>
@@ -135,7 +135,7 @@ const Profile = () => {
           <div>
             <div className="mb-4">
               <label
-                className="block text-sm font-bold mb-2 text-left"
+                className="block text-xs font-semibold text-uni-muted mb-1.5 uppercase tracking-wider text-left"
                 htmlFor="gender"
               >
                 {"Gender"} *
@@ -144,7 +144,7 @@ const Profile = () => {
                 id="gender"
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-lime/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
+                className="w-full py-2.5 px-3 bg-uni-surface border border-uni-border text-uni-text rounded-xl outline-none focus:border-uni-gold/60 focus:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all"
                 required
               >
                 <option value="">{"Select Gender"}</option>
@@ -163,10 +163,12 @@ const Profile = () => {
   return (
     <div className="flex flex-col gap-8 items-center h-screen overflow-y-auto uni-scroll bg-uni-bg text-uni-text px-4 py-12">
       <Toaster />
-      <h1 className="text-4xl sm:text-5xl font-bold">{"Set up your Profile"}</h1>
+      <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+        {"Set up your profile"}
+      </h1>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg p-7 sm:p-8 rounded-2xl shadow-2xl bg-uni-surface border border-uni-border"
+        className="w-full max-w-lg p-7 sm:p-9 rounded-2xl shadow-card bg-uni-surface border border-uni-border"
       >
         <div key={section} className="animate-fade-in-up">
           {renderSection()}
@@ -176,7 +178,7 @@ const Profile = () => {
             <button
               type="button"
               onClick={handlePrevious}
-              className="py-2.5 px-5 rounded-xl text-sm font-semibold bg-uni-surface2 border border-uni-border text-uni-text hover:border-uni-lime/40 transition-colors"
+              className="py-2.5 px-5 rounded-xl text-sm font-semibold bg-uni-surface2 border border-uni-border text-uni-text hover:border-uni-gold/40 transition-colors"
             >
               {"<"} {"Previous"}
             </button>

@@ -104,7 +104,7 @@ function Register() {
       {showPopup && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-uni-surface border border-uni-border text-uni-text rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto uni-scroll p-6">
-            <h2 className="text-xl font-bold mb-3 text-uni-text">
+            <h2 className="text-xl font-semibold mb-3 text-uni-text">
               {popupContent === "terms"
                 ? "Terms and Conditions"
                 : "Privacy Policy"}
@@ -198,7 +198,7 @@ function Register() {
           <label className="flex items-start gap-2 text-sm text-uni-muted select-none">
             <input
               type="checkbox"
-              className="accent-uni-lime mt-0.5 w-4 h-4 rounded"
+              className="accent-uni-gold mt-0.5 w-4 h-4 rounded"
               required
             />
             <span>
@@ -234,7 +234,7 @@ function Register() {
             {"Already have an account?"}{" "}
             <Link
               to="/login"
-              className="text-uni-cyan hover:text-uni-lime font-medium"
+              className="text-uni-blue hover:text-uni-gold font-semibold"
             >
               {"Sign in"}
             </Link>
@@ -247,7 +247,7 @@ function Register() {
 }
 
 const ErrorText = ({ msg }) => (
-  <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+  <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
     <svg
       width="12"
       height="12"
