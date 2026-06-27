@@ -1,29 +1,17 @@
-﻿import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+﻿import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import LoadingSpinner from "@/components/common/LoadingComponent";
+import FullScreenLoader from "@/components/common/FullScreenLoader";
 
+// Session gate for protected routes. allowUser is undefined until the first
+// onAuthStateChanged callback resolves — show a loader until then so we don't
+// flash the login screen at an already-signed-in user. Profile-completeness is
+// gated separately by RequireProfile.
 const PrivateRouter = ({ children }) => {
   const { allowUser } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (allowUser !== undefined) {
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
-  }, [allowUser]);
+  if (allowUser === undefined) return <FullScreenLoader />;
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full w-full bg-uni-bg text-uni-text">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  return allowUser ? children : <Navigate to="/login" />;
+  return allowUser ? children : <Navigate to="/login" replace />;
 };
 
 export default PrivateRouter;

@@ -2,7 +2,7 @@
 import { db } from "@/lib/firebase"; // Ensure the correct path to firebase.js
 import { create } from "zustand";
 
-const useUserStore = create((set) => ({
+const useUserStore = create((set, get) => ({
   currentUser: null,
   isLoading: true,
 
@@ -12,15 +12,21 @@ const useUserStore = create((set) => ({
       return;
     }
 
+    // Show the blocking loader only on first load / account switch. A token
+    // refresh re-fetches with a profile already in hand, so we don't want to
+    // flash a loader (and have the route guards bounce) on every refresh.
+    const existing = get().currentUser;
+    if (!existing || existing.id !== uid) set({ isLoading: true });
+
     try {
       const docRef = doc(db, "users", uid);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        set({ currentUser: data, isLoading: false });
+        set({ currentUser: docSnap.data(), isLoading: false });
       } else {
-        console.error("No such document!");
+        // Not an error: a brand-new account (e.g. a fresh Google sign-in) has
+        // no profile doc yet. The route guards send these users to onboarding.
         set({ currentUser: null, isLoading: false });
       }
     } catch (err) {
