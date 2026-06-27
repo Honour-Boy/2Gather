@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { userchatsSyncHandler } = require("./userchats");
 const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./verses");
+const { recommendHandler } = require("./verseRecommend");
 const { templatesHandler } = require("./prayerTemplates");
 
 dotenv.config();
@@ -44,6 +45,12 @@ app.post("/api/userchats/sync", userchatsSyncHandler);
 app.get("/api/verses", versesHandler);
 app.get("/api/verses/daily", dailyVerseHandler);
 app.get("/api/verses/search", searchVersesHandler);
+
+// AI verse recommendations (Phase 8): POST a free-text prayer request, get 1–3
+// REAL, attributed verses that fit it. The model only ranks candidates we
+// supply — it never writes scripture or a prayer — and the feature degrades to
+// keyword→theme retrieval when no AI key is configured. See verseRecommend.js.
+app.post("/api/verses/recommend", recommendHandler);
 
 // Prayer-template library (Phase 2): curated editable starter prayers by theme.
 // Static + public + cacheable. See prayerTemplates.js.
