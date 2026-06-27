@@ -12,7 +12,7 @@
 // quota), it maps the request to themes by keyword and returns those verses.
 
 const axios = require("axios");
-const { THEMES, TRANSLATION, getVersesByTheme } = require("./verses");
+const { THEMES, TRANSLATION, VERSES, getVersesByTheme } = require("./verses");
 
 // --- Keyword → theme mapping (the no-LLM path, and how we pick candidates) ---
 // A request can hit several themes (e.g. "anxious" → courage + peace); we score
@@ -126,10 +126,14 @@ const AI_DEFAULTS = {
 // System prompt is fixed: it constrains the model to reply with ONLY numbers,
 // which both prevents prose/invented scripture AND keeps output tokens tiny.
 const SYSTEM_PROMPT =
-  "You help match Bible verses to what a person is praying about. From the " +
-  "NUMBERED candidate verses below, choose the 1-3 that best fit the request. " +
-  'Reply with ONLY their numbers separated by commas (e.g. "2, 5"). Do not ' +
-  "write a prayer, do not quote or invent any other scripture, do not add commentary.";
+  "You help match Bible verses to what a person is praying about. First understand " +
+  "what they are really going through — the emotion and situation beneath the words, " +
+  "not just literal keywords. For example, \"I'm tired of life\" is discouragement or " +
+  "hopelessness (offer hope and strength), not physical tiredness; \"I'm drowning at " +
+  "work\" is being overwhelmed, not literal water. From the NUMBERED verses below, " +
+  "choose the 1-3 that speak most directly to that underlying need. Reply with ONLY " +
+  'their numbers separated by commas (e.g. "2, 5"). Do not write a prayer, do not ' +
+  "quote or invent any other scripture, do not add commentary.";
 
 function intEnv(name, def, min, max) {
   const n = parseInt(process.env[name], 10);
@@ -268,9 +272,13 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
     themes = [theme, ...themes.filter((t) => t !== theme)];
   }
   const usedThemes = themes.length ? themes : DEFAULT_THEMES;
-  const candidates = buildCandidates(usedThemes);
+  // Keyword-themed candidates power the no-LLM fallback (the best we can do
+  // without understanding intent). The LLM, by contrast, ranks over the WHOLE
+  // corpus so it can match the meaning behind the request — e.g. "tired of life"
+  // → an encouragement verse, not the literal "rest" pool a keyword would pick.
+  const fallbackCandidates = buildCandidates(usedThemes);
 
-  // Optional LLM ranking, strictly constrained to the candidate ids we supplied.
+  // Optional LLM ranking, strictly constrained to ids from our real corpus.
   // Tests inject `deps.llmRank`; in production we only call when the guardrails
   // allow it (key set, breaker closed, daily budget left) and spend one unit.
   let picked = null;
@@ -279,9 +287,9 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
   if (deps.llmRank || useReal) {
     if (useReal) noteLlmCall();
     try {
-      const ids = await llmRank(text, candidates);
-      const allowed = new Set(candidates.map((c) => c.id));
-      const byId = new Map(candidates.map((c) => [c.id, c]));
+      const ids = await llmRank(text, VERSES);
+      const allowed = new Set(VERSES.map((v) => v.id));
+      const byId = new Map(VERSES.map((v) => [v.id, v]));
       const valid = (Array.isArray(ids) ? ids : [])
         .filter((id) => allowed.has(id))
         .slice(0, MAX_RESULTS);
@@ -291,7 +299,7 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
     }
   }
 
-  const chosen = picked || fallbackRank(candidates, usedThemes);
+  const chosen = picked || fallbackRank(fallbackCandidates, usedThemes);
   return {
     verses: shape(chosen),
     matchedThemes: usedThemes,

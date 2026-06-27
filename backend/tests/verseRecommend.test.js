@@ -64,6 +64,25 @@ describe("recommendVerses — grounding", () => {
     expect(verses.length).toBeLessThanOrEqual(3);
   });
 
+  test("offers the LLM the whole corpus so it can match intent across themes", async () => {
+    // "tired of life" keyword-maps to 'rest', but the model must be free to pick
+    // an encouragement verse from another theme — so it sees the full corpus, not
+    // just the keyword-matched 'rest' pool.
+    let offered = [];
+    const llmRank = async (_req, candidates) => {
+      offered = candidates.map((c) => c.id);
+      return ["phi-4-13"]; // Philippians 4:13 (courage) — absent from the 'rest' pool
+    };
+    const { verses, source } = await recommendVerses(
+      { request: "I am tired of life" },
+      { llmRank }
+    );
+    expect(source).toBe("llm");
+    expect(verses.map((v) => v.id)).toContain("phi-4-13");
+    expect(offered).toContain("phi-4-13");
+    expect(offered.length).toBe(VERSES.length);
+  });
+
   test("never returns generated prose — only {id, reference, text, themes}", async () => {
     const { verses } = await recommendVerses({ request: "thankful for a new job" });
     for (const v of verses) {
