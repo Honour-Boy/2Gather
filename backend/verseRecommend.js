@@ -13,6 +13,8 @@
 
 const axios = require("axios");
 const { THEMES, TRANSLATION, VERSES, getVersesByTheme } = require("./verses");
+const bibleApi = require("./bibleApi");
+const { parseReference } = require("./bibleRef");
 
 // --- Keyword → theme mapping (the no-LLM path, and how we pick candidates) ---
 // A request can hit several themes (e.g. "anxious" → courage + peace); we score
@@ -97,43 +99,47 @@ function fallbackRank(candidates, themes) {
   return [...candidates].sort((a, b) => overlap(b) - overlap(a));
 }
 
-// Shape a verse for the API response (always from our data — accurate + attributed).
+// Shape a verse for the API response. Text is always from an authoritative source
+// (API.Bible or the static seed) — never AI-authored. `themes` may be empty for
+// whole-Bible results that aren't tied to a curated theme.
 function shape(list) {
   return list
     .slice(0, MAX_RESULTS)
-    .map((v) => ({ id: v.id, reference: v.reference, text: v.text, themes: v.themes }));
+    .map((v) => ({ id: v.id, reference: v.reference, text: v.text, themes: v.themes || [] }));
 }
 
 // --- AI config + cost guardrails ---------------------------------------------
 // An LLM is NEVER required and can never run away with cost. Every knob is
 // env-overridable with cheap, safe defaults:
-//   • pinned cheap model + tiny max_tokens (the reply is only verse numbers)
-//   • bounded prompt (≤ MAX_CANDIDATES verses; request ≤ MAX_REQUEST_LEN chars)
+//   • pinned cheap model + small max_tokens (the reply is only verse references)
+//   • request ≤ MAX_REQUEST_LEN chars
 //   • a hard per-day call budget (AI_DAILY_LIMIT) → fall back when it's spent
 //   • capped retries (AI_MAX_RETRIES) with backoff — never an infinite loop
 //   • a circuit breaker that stops calling on a bad key / exhausted quota
 //   • per-request cache + per-IP rate limit (below)
 // The OpenAI-dashboard usage limit is the ultimate backstop — see .env.example.
 const AI_DEFAULTS = {
-  model: "gpt-4o-mini", // cheap + plenty for ranking
+  model: "gpt-4o-mini", // cheap + plenty for choosing references
   baseUrl: "https://api.openai.com/v1",
   maxRetries: 1,
   timeoutMs: 8000,
   dailyLimit: 200,
-  maxOutputTokens: 20,
+  maxOutputTokens: 60,
 };
 
-// System prompt is fixed: it constrains the model to reply with ONLY numbers,
-// which both prevents prose/invented scripture AND keeps output tokens tiny.
+// The model only ever NAMES references (drawing on its knowledge of the whole
+// Bible); it must not quote the text — we fetch the verbatim words ourselves from
+// API.Bible. The prompt pushes it to read the feeling behind the words, and to
+// reply with references only (which also keeps output tokens small).
 const SYSTEM_PROMPT =
-  "You help match Bible verses to what a person is praying about. First understand " +
-  "what they are really going through — the emotion and situation beneath the words, " +
-  "not just literal keywords. For example, \"I'm tired of life\" is discouragement or " +
-  "hopelessness (offer hope and strength), not physical tiredness; \"I'm drowning at " +
-  "work\" is being overwhelmed, not literal water. From the NUMBERED verses below, " +
-  "choose the 1-3 that speak most directly to that underlying need. Reply with ONLY " +
-  'their numbers separated by commas (e.g. "2, 5"). Do not write a prayer, do not ' +
-  "quote or invent any other scripture, do not add commentary.";
+  "You help a person find Bible verses for what they are praying about. First " +
+  "understand what they are really going through — the emotion and situation beneath " +
+  'the words, not just literal keywords. For example, "I\'m tired of life" is ' +
+  "discouragement or hopelessness (offer hope and strength), not physical tiredness. " +
+  "Choose the 1-3 real Bible verses (from anywhere in Scripture) that speak most " +
+  "directly to that underlying need. Reply with ONLY their references separated by " +
+  'semicolons (e.g. "John 16:33; Philippians 4:13; Isaiah 41:10"). Do NOT quote the ' +
+  "verse text, do not write a prayer, do not add any commentary.";
 
 function intEnv(name, def, min, max) {
   const n = parseInt(process.env[name], 10);
@@ -193,21 +199,37 @@ function isQuotaError(err) {
   return /insufficient_quota|billing|quota/i.test(String((e && (e.code || e.type)) || ""));
 }
 
-// One OpenAI-compatible /chat/completions call → candidate ids the model picked
-// (⊆ the ones we supplied). Never trusted for scripture: we only parse numbers.
-async function callProvider(request, candidates, cfg) {
-  const numbered = candidates
-    .map((c, i) => `${i + 1}. ${c.reference}: "${c.text}"`)
-    .join("\n");
+// Split the model's reply into reference strings ("John 16:33; Phil 4:13" →
+// ["John 16:33", "Phil 4:13"]). Strips list bullets/enumerators but preserves the
+// leading number of books like "1 Corinthians". Resolution + validation happen
+// later against the real corpus, so junk lines simply fail to resolve.
+function parseReferenceList(reply) {
+  return String(reply || "")
+    .split(/[;\n]+/)
+    .map((s) =>
+      s
+        .trim()
+        .replace(/^[-*•]\s*/, "") // bullet
+        .replace(/^\d+[.)]\s+/, "") // "1. " / "2) " enumerator (not "1 Corinthians")
+        .trim()
+    )
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+// One OpenAI-compatible /chat/completions call → an array of reference strings the
+// model chose. Never trusted for scripture TEXT — only the references; we fetch
+// the words from API.Bible.
+async function callProvider(request, cfg) {
   const { data } = await axios.post(
     `${cfg.baseUrl}/chat/completions`,
     {
       model: cfg.model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Request: "${request}"\nCandidates:\n${numbered}` },
+        { role: "user", content: `Request: "${request}"` },
       ],
-      temperature: 0.2,
+      temperature: 0.3,
       max_tokens: AI_DEFAULTS.maxOutputTokens,
     },
     {
@@ -215,27 +237,20 @@ async function callProvider(request, candidates, cfg) {
       timeout: cfg.timeoutMs,
     }
   );
-
-  const reply = data?.choices?.[0]?.message?.content || "";
-  const ids = [];
-  for (const n of reply.match(/\d+/g) || []) {
-    const c = candidates[parseInt(n, 10) - 1];
-    if (c && !ids.includes(c.id)) ids.push(c.id);
-  }
-  return ids;
+  return parseReferenceList(data?.choices?.[0]?.message?.content || "");
 }
 
 // Default provider client with cost guardrails: capped retries on transient
 // errors, and an immediate circuit-break (no retry) on a bad key / exhausted
 // quota. Works with OpenAI, Groq, OpenRouter, … by swapping AI_BASE_URL/MODEL/KEY.
-async function defaultLlmRank(request, candidates) {
+async function defaultLlmRank(request) {
   const cfg = aiConfig();
   if (!cfg.apiKey) throw new Error("AI disabled (no AI_API_KEY)");
 
   let attempt = 0;
   for (;;) {
     try {
-      return await callProvider(request, candidates, cfg);
+      return await callProvider(request, cfg);
     } catch (err) {
       const status = err && err.response && err.response.status;
       // Auth/quota: don't retry, and stop calling for a while.
@@ -248,6 +263,21 @@ async function defaultLlmRank(request, candidates) {
       await sleep(250 * attempt); // small linear backoff
     }
   }
+}
+
+// Resolve a reference → verbatim text. Prefer API.Bible (the whole Bible); fall
+// back to the static seed by reference, so well-known verses still work before the
+// Bible key is set (or if API.Bible is briefly down). Never model-authored text.
+const refKey = (s) => String(s).toLowerCase().replace(/\s+/g, "");
+const SEED_BY_REF = new Map(VERSES.map((v) => [refKey(v.reference), v]));
+async function resolveReference(ref) {
+  const viaApi = await bibleApi.getPassage(ref);
+  if (viaApi) return viaApi;
+  const parsed = parseReference(ref);
+  const seed = SEED_BY_REF.get(refKey(parsed ? parsed.reference : ref));
+  return seed
+    ? { id: seed.id, reference: seed.reference, text: seed.text, themes: seed.themes }
+    : null;
 }
 
 // Core logic (no Express) so it's unit-testable. `deps.llmRank` lets tests inject
@@ -272,30 +302,33 @@ async function recommendVerses({ request, theme } = {}, deps = {}) {
     themes = [theme, ...themes.filter((t) => t !== theme)];
   }
   const usedThemes = themes.length ? themes : DEFAULT_THEMES;
-  // Keyword-themed candidates power the no-LLM fallback (the best we can do
-  // without understanding intent). The LLM, by contrast, ranks over the WHOLE
-  // corpus so it can match the meaning behind the request — e.g. "tired of life"
-  // → an encouragement verse, not the literal "rest" pool a keyword would pick.
+  // Keyword-themed seed verses power the no-LLM / no-API fallback (the best we can
+  // do without the whole Bible).
   const fallbackCandidates = buildCandidates(usedThemes);
 
-  // Optional LLM ranking, strictly constrained to ids from our real corpus.
-  // Tests inject `deps.llmRank`; in production we only call when the guardrails
-  // allow it (key set, breaker closed, daily budget left) and spend one unit.
+  // AI path: the model proposes references from the WHOLE Bible (matching the
+  // meaning behind the request, not just keywords); we resolve each to verbatim
+  // text via API.Bible and keep only those that resolve — so an invented reference
+  // is dropped and the text is never the model's. Tests inject `deps.llmRank`
+  // (references) and/or `deps.resolve`; in production we only call the model when
+  // its guardrails allow it (key, breaker, budget) and spend one unit.
   let picked = null;
   const llmRank = deps.llmRank || defaultLlmRank;
+  const resolveRef = deps.resolve || resolveReference;
   const useReal = !deps.llmRank && aiAvailable();
   if (deps.llmRank || useReal) {
     if (useReal) noteLlmCall();
     try {
-      const ids = await llmRank(text, VERSES);
-      const allowed = new Set(VERSES.map((v) => v.id));
-      const byId = new Map(VERSES.map((v) => [v.id, v]));
-      const valid = (Array.isArray(ids) ? ids : [])
-        .filter((id) => allowed.has(id))
-        .slice(0, MAX_RESULTS);
-      if (valid.length) picked = valid.map((id) => byId.get(id));
+      const refs = await llmRank(text);
+      const resolved = [];
+      for (const ref of Array.isArray(refs) ? refs : []) {
+        if (resolved.length >= MAX_RESULTS) break;
+        const v = await resolveRef(ref);
+        if (v && v.text && !resolved.some((r) => r.id === v.id)) resolved.push(v);
+      }
+      if (resolved.length) picked = resolved;
     } catch {
-      picked = null; // provider error / over quota → graceful fallback
+      picked = null; // provider/API error → graceful fallback
     }
   }
 
@@ -390,6 +423,8 @@ module.exports = {
   detectThemes,
   buildCandidates,
   fallbackRank,
+  parseReferenceList,
+  resolveReference,
   aiConfig,
   aiAvailable,
   budgetRemaining,
