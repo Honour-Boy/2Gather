@@ -6,7 +6,7 @@ function Intro() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-screen min-h-screen max-h-screen overflow-y-auto bg-uni-bg text-uni-text font-sans uni-scroll">
+    <div className="w-screen h-dvh overflow-y-auto bg-uni-bg text-uni-text font-sans uni-scroll">
       {/* Warm ambient halos (gold + soft blue), like candle / window light */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-uni-gold/15 blur-3xl animate-float" />
