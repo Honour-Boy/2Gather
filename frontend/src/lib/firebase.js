@@ -1,7 +1,12 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -18,6 +23,14 @@ const app = initializeApp(firebaseConfig);
 
 // Get Auth Service
 const auth = getAuth(app);
+
+// Keep the session in localStorage so it survives full page reloads and browser
+// restarts (this is the SDK default, but we set it explicitly so the intent is
+// clear and stable). The session ends only on sign-out or when Firebase revokes
+// the refresh token; the SDK auto-refreshes the ID token in the background.
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn("Could not set auth persistence:", err?.message || err);
+});
 // Initialize Firestore
 const db = getFirestore(app);
 // Initialize Firebase Storage Service

@@ -39,6 +39,11 @@ service cloud.firestore {
       match /journal/{entryId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      // Private per-user custom prayer templates. Owner-only.
+      match /prayerTemplates/{templateId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Per-user chat index. Owner-read only. ALL client writes are denied — the
@@ -72,10 +77,11 @@ service cloud.firestore {
       allow delete: if false;
 
       // Messages subcollection. Scoped to the parent chat's participants.
-      // The sender writes the original text first (persist-first), then patches
-      // `translatedText` once best-effort translation resolves — so updates are
-      // allowed for the sender, but content/metadata is immutable: only
-      // `translatedText` can change (senderId, text, createdAt are pinned).
+      // The sender may edit their own message (change `text`, set `editedAt`) and
+      // soft-delete it (set `deleted: true` — we keep a tombstone rather than
+      // hard-deleting, so the other participant sees "this message was deleted").
+      // `senderId` and `createdAt` are pinned, so ownership and ordering can't be
+      // forged, and only the original sender can update. Hard deletes stay off.
       match /messages/{messageId} {
         allow read: if isChatParticipant(chatId);
         allow create: if isChatParticipant(chatId)
@@ -83,7 +89,6 @@ service cloud.firestore {
         allow update: if isChatParticipant(chatId)
           && resource.data.senderId == request.auth.uid
           && request.resource.data.senderId == resource.data.senderId
-          && request.resource.data.text == resource.data.text
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }

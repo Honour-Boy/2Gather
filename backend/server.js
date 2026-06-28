@@ -6,6 +6,7 @@ const { versesHandler, dailyVerseHandler, searchVersesHandler } = require("./cur
 const { recommendHandler } = require("./verseRecommend");
 const { listTranslations } = require("./translations");
 const { templatesHandler } = require("./prayerTemplates");
+const { generateHandler: generatePrayerHandler } = require("./prayerGenerate");
 const { initSentry } = require("./observability");
 
 dotenv.config();
@@ -65,6 +66,12 @@ app.get("/api/translations", (req, res) =>
 // Prayer-template library (Phase 2): curated editable starter prayers by theme.
 // Static + public + cacheable. See prayerTemplates.js.
 app.get("/api/prayer-templates", templatesHandler);
+
+// AI prayer-template generation (opt-in): POST a topic/theme, get a short,
+// reverent STARTER prayer (editable) + a real, attributed suggested verse. The
+// model writes only the prayer prose; scripture stays from our corpus. Degrades
+// to a curated template when AI is off/over-budget. See prayerGenerate.js.
+app.post("/api/prayer-templates/generate", generatePrayerHandler);
 
 // Centralized error handler (must be last). Reports to Sentry when enabled and
 // returns a safe 500 — never leaks internals to the client.

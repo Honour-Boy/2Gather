@@ -12,6 +12,7 @@ import Journal from "./pages/Journal";
 import NotFound from "./pages/NotFound";
 import PrivateRouter from "@/components/routers/PrivateRouter";
 import PublicRouter from "@/components/routers/PublicRouter";
+import { RequireProfile, RequireOnboarding } from "@/components/routers/ProfileGate";
 import AppShell from "@/components/layout/AppShell";
 import { useEffect } from "react";
 import { auth } from "@/lib/firebase";
@@ -19,58 +20,56 @@ import { onAuthStateChanged } from "firebase/auth";
 import useUserStore from "@/store/userStore";
 import usePresence from "@/hooks/usePresence";
 import "./styles/App.css";
-import LoadingSpinner from "@/components/common/LoadingComponent";
 
-// Wraps every signed-in screen: waits for the profile to load, forces profile
-// setup for half-onboarded accounts, then renders inside the persistent AppShell
-// (desktop rail + mobile bottom tabs).
-function Authed({ children }) {
-  const { isLoading, currentUser } = useUserStore();
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center bg-uni-bg w-screen h-screen text-uni-text flex-col gap-3">
-        <LoadingSpinner />
-        <span className="text-sm text-uni-muted">Loading…</span>
-      </div>
-    );
-  }
-  // Authenticated but no profile yet (a freshly registered account has only
-  // fullName/email): force profile setup before the app.
-  if (currentUser && !currentUser.username) {
-    return <Navigate to="/create-profile" replace />;
-  }
-  return <AppShell>{children}</AppShell>;
-}
-
+// Every signed-in screen: PrivateRouter checks the session, RequireProfile waits
+// for the profile to load and forces onboarding for half-onboarded accounts
+// (no username — e.g. a fresh Google sign-in), then it renders inside the
+// persistent AppShell (desktop rail + mobile top/bottom bars).
 const authed = (Page) => (
   <PrivateRouter>
-    <Authed>
-      <Page />
-    </Authed>
+    <RequireProfile>
+      <AppShell>
+        <Page />
+      </AppShell>
+    </RequireProfile>
   </PrivateRouter>
 );
 
 function App() {
-  const { fetchUserInfo, currentUser } = useUserStore();
+  const { fetchUserInfo, clearUserInfo, currentUser } = useUserStore();
   usePresence(currentUser?.id);
   useEffect(() => {
+    // Mirror the Firebase session into the profile store: load the profile on
+    // sign-in, clear it on sign-out / session expiry (so stale data can't leak
+    // into the next session or confuse the route guards).
     const unSub = onAuthStateChanged(auth, (user) => {
       if (user) fetchUserInfo(user.uid);
+      else clearUserInfo();
     });
     return () => unSub();
-  }, [fetchUserInfo]);
+  }, [fetchUserInfo, clearUserInfo]);
 
   return (
     <Router>
-      <div className="max-h-screen max-w-screen bg-uni-bg font-sans">
+      <div className="h-full w-full overflow-hidden bg-uni-bg font-sans">
         <Routes>
           <Route path="/" element={<PublicRouter><Intro /></PublicRouter>} />
           <Route path="/login" element={<PublicRouter><Login /></PublicRouter>} />
           <Route path="/register" element={<PublicRouter><Register /></PublicRouter>} />
           <Route path="/forgot-password" element={<PublicRouter><ForgotPassword /></PublicRouter>} />
 
-          {/* Onboarding — full screen, outside the AppShell. */}
-          <Route path="/create-profile" element={<PrivateRouter><Profile /></PrivateRouter>} />
+          {/* Onboarding — full screen, outside the AppShell. RequireOnboarding
+              keeps already-complete profiles out of it. */}
+          <Route
+            path="/create-profile"
+            element={
+              <PrivateRouter>
+                <RequireOnboarding>
+                  <Profile />
+                </RequireOnboarding>
+              </PrivateRouter>
+            }
+          />
 
           {/* Signed-in app (inside AppShell). */}
           <Route path="/home" element={authed(Home)} />

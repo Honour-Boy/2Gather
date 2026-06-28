@@ -161,7 +161,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 items-center h-screen overflow-y-auto uni-scroll bg-uni-bg text-uni-text px-4 py-12">
+    <div className="flex flex-col gap-8 items-center h-dvh overflow-y-auto uni-scroll bg-uni-bg text-uni-text px-4 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <Toaster />
       <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
         {"Set up your profile"}

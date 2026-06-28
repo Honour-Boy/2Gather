@@ -16,6 +16,11 @@ import LoadingSpinner from "@/components/common/LoadingComponent";
 import Avatar from "@/components/ui/Avatar";
 import { enableNotifications } from "@/lib/messaging";
 import { VERSE_THEMES } from "@/lib/modes";
+import {
+  subscribeCustomTemplates,
+  addCustomTemplate,
+  deleteCustomTemplate,
+} from "@/services/customTemplates";
 
 // In-app profile editing. Pre-fills from the signed-in user's `users/{uid}` doc
 // and writes edits back. Username keeps its "@"-prefix + uniqueness rule (only
@@ -96,6 +101,7 @@ const Settings = () => {
         ? prev
         : {
             ...FIELDS.reduce((acc, f) => ({ ...acc, [f]: currentUser[f] || "" }), {}),
+            aiPrayerTemplates: !!currentUser.aiPrayerTemplates,
             notificationPrefs: {
               ...DEFAULT_PREFS,
               ...(currentUser.notificationPrefs || {}),
@@ -110,7 +116,7 @@ const Settings = () => {
 
   if (!currentUser || !form) {
     return (
-      <div className="flex items-center justify-center h-screen bg-uni-bg text-uni-text">
+      <div className="flex items-center justify-center h-full bg-uni-bg text-uni-text">
         <LoadingSpinner />
       </div>
     );
@@ -202,6 +208,7 @@ const Settings = () => {
         {}
       );
       patch.notificationPrefs = form.notificationPrefs;
+      patch.aiPrayerTemplates = !!form.aiPrayerTemplates;
       await updateDoc(doc(db, "users", currentUser.id), patch);
 
       // Refresh the store so the rest of the app reflects the edits immediately.
@@ -220,22 +227,16 @@ const Settings = () => {
     <div className="min-h-full bg-uni-bg text-uni-text">
       <Toaster />
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-uni-border bg-uni-bg/90 backdrop-blur">
-        <button
-          onClick={() => navigate("/home")}
-          className="p-2 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface transition-colors"
-          aria-label={"Back"}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5" />
-            <path d="m12 19-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-base md:text-lg font-semibold text-uni-text">{"Edit profile"}</h1>
-      </div>
+      <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
+        <header>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+            {"Edit profile"}
+          </h1>
+          <p className="mt-1 text-sm text-uni-muted">
+            Update how you show up on 2Gather.
+          </p>
+        </header>
 
-      <form onSubmit={handleSave} className="max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-8">
         {/* Avatar + identity summary */}
         <section className="flex items-center gap-4">
           <div className="relative shrink-0">
@@ -312,6 +313,21 @@ const Settings = () => {
               </select>
             </Field>
           </div>
+        </Section>
+
+        {/* Prayer templates */}
+        <Section title={"Prayer templates"}>
+          <PrefToggle
+            label={"Let AI write a starter prayer for me"}
+            checked={!!form.aiPrayerTemplates}
+            onChange={(v) => setForm((f) => ({ ...f, aiPrayerTemplates: v }))}
+          />
+          <p className="text-xs text-uni-muted">
+            When on, the prayer-template picker can generate a short starter prayer
+            for your chosen topic. It’s always editable before you send, and any
+            verse it suggests is real and attributed — never written by the AI.
+          </p>
+          <CustomTemplatesManager uid={currentUser.id} />
         </Section>
 
         {/* Notifications */}
@@ -415,6 +431,109 @@ const Settings = () => {
 
       {/* Make the native date picker indicator visible on the dark theme. */}
       <style>{`.calendar-icon-white::-webkit-calendar-picker-indicator { filter: none; }`}</style>
+    </div>
+  );
+};
+
+const CustomTemplatesManager = ({ uid }) => {
+  const [items, setItems] = useState([]);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = subscribeCustomTemplates(uid, setItems);
+    return () => unsub();
+  }, [uid]);
+
+  const add = async () => {
+    const b = body.trim();
+    if (!b || busy) return;
+    setBusy(true);
+    try {
+      await addCustomTemplate(uid, { title: title.trim(), body: b });
+      setTitle("");
+      setBody("");
+      notify.success("Template saved.");
+    } catch {
+      notify.error("Couldn’t save the template.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id) => {
+    try {
+      await deleteCustomTemplate(uid, id);
+    } catch {
+      notify.error("Couldn’t delete the template.");
+    }
+  };
+
+  return (
+    <div className="space-y-3 pt-1">
+      <p className="text-sm font-medium text-uni-text">Your templates</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-uni-muted">
+          Save your own go-to prayers to reuse them in any chat.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((t) => (
+            <li
+              key={t.id}
+              className="flex items-start justify-between gap-3 rounded-xl border border-uni-border bg-uni-bg/60 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-uni-text truncate">{t.title}</p>
+                <p className="text-xs text-uni-muted line-clamp-2">{t.body}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(t.id)}
+                className="shrink-0 text-xs text-uni-muted hover:text-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="rounded-xl border border-uni-border bg-uni-surface p-3 space-y-2">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter adds the template instead of submitting the profile form.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Title (e.g. Before work)"
+          className={inputCls}
+        />
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={3}
+          placeholder="Write your prayer…"
+          className={`${inputCls} resize-none`}
+        />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={add}
+            disabled={!body.trim() || busy}
+            className="px-4 py-2 text-sm font-bold text-uni-on-accent rounded-lg bg-brand shadow-bubble hover:shadow-glow disabled:opacity-50 transition-all"
+          >
+            {busy ? "Saving…" : "Add template"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

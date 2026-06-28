@@ -1,10 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import LogoutNow from "@/components/common/LogoutNow";
 import BrandMark from "@/components/ui/BrandMark";
 
-// Persistent app shell: a desktop left rail + a mobile bottom tab bar, with the
-// active screen rendered in a single scroll area between them. This is the home
-// for every signed-in screen (Home, Pray, Verses, Journal, You).
+// Persistent app shell: a desktop left rail + a mobile top bar & bottom tab bar,
+// with the active screen rendered in a single scroll area between them. This is
+// the home for every signed-in screen (Home, Pray, Verses, Journal, You).
 const TABS = [
   { to: "/home", label: "Home", icon: HomeIcon },
   { to: "/pray", label: "Pray", icon: ChatIcon },
@@ -13,9 +13,18 @@ const TABS = [
   { to: "/settings", label: "You", icon: UserIcon },
 ];
 
+// The Pray screen is a full-height chat with its own conversation header, so we
+// suppress the global mobile top bar there to give the chat all the room.
+const FULL_BLEED_ROUTES = ["/pray"];
+
 export default function AppShell({ children }) {
+  const { pathname } = useLocation();
+  const showMobileTopBar = !FULL_BLEED_ROUTES.includes(pathname);
+
   return (
-    <div className="h-screen w-screen flex bg-uni-bg text-uni-text overflow-hidden">
+    // h-dvh (dynamic viewport height) keeps the frame == the *visible* area on
+    // mobile, so the bottom tab bar is never pushed behind the browser chrome.
+    <div className="h-dvh w-screen flex bg-uni-bg text-uni-text overflow-hidden">
       {/* Desktop left rail */}
       <nav className="hidden md:flex w-20 shrink-0 flex-col items-center justify-between border-r border-uni-border py-5">
         <div className="flex flex-col items-center gap-1.5">
@@ -29,9 +38,24 @@ export default function AppShell({ children }) {
         <LogoutNow />
       </nav>
 
-      {/* Content + mobile bottom bar */}
+      {/* Content + mobile chrome */}
       <div className="flex-1 min-w-0 flex flex-col">
+        {/* Mobile top bar — brand identity + a reachable logout (the desktop rail
+            is hidden on phones). pt env() clears the status bar / notch. */}
+        {showMobileTopBar && (
+          <header className="md:hidden shrink-0 flex items-center justify-between gap-3 px-4 h-14 border-b border-uni-border bg-uni-bg/95 backdrop-blur pt-[env(safe-area-inset-top)] box-content">
+            <NavLink to="/home" aria-label="2Gather home" className="flex items-center gap-2">
+              <BrandMark className="w-8 h-8" />
+              <span className="font-display text-lg font-semibold tracking-tight">
+                2Gather
+              </span>
+            </NavLink>
+            <LogoutNow />
+          </header>
+        )}
+
         <main className="flex-1 min-h-0 overflow-y-auto uni-scroll">{children}</main>
+
         <nav className="md:hidden shrink-0 flex items-stretch justify-around border-t border-uni-border bg-uni-bg/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
           {TABS.map((t) => (
             <BottomItem key={t.to} {...t} />

@@ -7,6 +7,17 @@ import {
   deleteJournalEntry,
   updateJournalNote,
 } from "@/services/journal";
+import ShareButton from "@/components/chat/ShareButton";
+
+// Format a saved entry into the text we send into a chat. Verses go out quoted +
+// attributed (like the verse picker); prayers/reflections as their own words.
+const shareTextFor = (entry) => {
+  const text = entry.text || entry.body || "";
+  if ((entry.kind || "reflection") === "verse" && entry.reference) {
+    return `“${text}” — ${entry.reference} (WEB)`;
+  }
+  return text;
+};
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -109,6 +120,7 @@ export default function Journal() {
                 key={e.id}
                 uid={uid}
                 entry={e}
+                currentUser={currentUser}
                 onDelete={() => deleteJournalEntry(uid, e.id)}
               />
             ))}
@@ -124,10 +136,12 @@ const KIND_META = {
   reflection: { label: "Reflection", color: "text-uni-blue" },
 };
 
-const JournalEntry = ({ uid, entry, onDelete }) => {
+const JournalEntry = ({ uid, entry, currentUser, onDelete }) => {
   const kind = entry.kind || "reflection";
   const meta = KIND_META[kind] || KIND_META.reflection;
   const text = entry.text || entry.body || "";
+  // Verses/prayers go to a chat styled as prayers; reflections as plain text.
+  const shareKind = kind === "reflection" ? undefined : "prayer";
 
   return (
     <div
@@ -148,6 +162,13 @@ const JournalEntry = ({ uid, entry, onDelete }) => {
           <span className="text-[10px] text-uni-muted">
             {entry.createdAt?.toDate ? format(entry.createdAt.toDate()) : ""}
           </span>
+          <ShareButton
+            text={shareTextFor(entry)}
+            kind={shareKind}
+            currentUser={currentUser}
+            preview={text}
+            label="Send to a chat"
+          />
           <button
             onClick={onDelete}
             className="text-[10px] text-uni-muted hover:text-red-500 transition-colors"
