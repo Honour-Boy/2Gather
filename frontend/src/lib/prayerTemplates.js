@@ -13,3 +13,17 @@ export async function fetchPrayerTemplates({ theme } = {}) {
   const data = await res.json();
   return data.templates || [];
 }
+
+// Ask the backend to generate a short, reverent STARTER prayer for a topic/theme
+// (opt-in — only called when the user has enabled AI). Returns
+// { prayer, verse: {reference,text}|null, source, support? }. The prayer is
+// editable; any verse is real + attributed (never model-quoted).
+export async function generatePrayer({ topic, theme, hasVerse } = {}) {
+  const res = await fetch(`${API_URL}/api/prayer-templates/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ topic, theme, hasVerse: !!hasVerse }),
+  });
+  if (!res.ok) throw new Error(`generate request failed: ${res.status}`);
+  return res.json();
+}
