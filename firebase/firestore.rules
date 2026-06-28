@@ -39,6 +39,11 @@ service cloud.firestore {
       match /journal/{entryId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      // Private per-user custom prayer templates. Owner-only.
+      match /prayerTemplates/{templateId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Per-user chat index. Owner-read only. ALL client writes are denied — the
