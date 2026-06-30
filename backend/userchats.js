@@ -17,6 +17,14 @@
 // credentials (CI has none).
 
 const { notifyNewMessage } = require("./notifications");
+const { createRateLimiter } = require("./rateLimit");
+
+// Per-user throttle on the sync RPC. A valid participant could otherwise spam it:
+// every call re-derives both previews AND fires a best-effort FCM push at the
+// partner, so an unthrottled loop is a notification-spam vector. Keyed on the
+// authed uid (not IP) — generous enough for real message bursts, tight enough to
+// blunt abuse. In-memory / single-instance, like the other limiters.
+const syncLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 
 let _admin;
 function getAdmin() {
@@ -80,6 +88,10 @@ async function userchatsSyncHandler(req, res) {
 
     const decoded = await getAdmin().auth().verifyIdToken(token);
 
+    if (syncLimiter.limited(decoded.uid)) {
+      return res.status(429).json({ error: "Too many requests. Please slow down a moment." });
+    }
+
     const chatId = req.body && req.body.chatId;
     if (!chatId) return res.status(400).json({ error: "chatId is required" });
 
@@ -101,4 +113,9 @@ async function userchatsSyncHandler(req, res) {
   }
 }
 
-module.exports = { syncChatIndex, userchatsSyncHandler };
+// Test helper: clear the per-user throttle so suites don't leak counts.
+function _resetState() {
+  syncLimiter._reset();
+}
+
+module.exports = { syncChatIndex, userchatsSyncHandler, _resetState };

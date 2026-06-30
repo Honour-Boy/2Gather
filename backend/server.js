@@ -17,6 +17,14 @@ const Sentry = initSentry();
 const app = express();
 const port = process.env.PORT || 8001;
 
+// Render/Railway terminate TLS at a single reverse proxy in front of this service,
+// so the raw connection IP is the proxy's, not the client's. Trust exactly ONE
+// hop so req.ip resolves the real client from X-Forwarded-For — without this the
+// per-IP rate limiters key every request to the same proxy address (one shared
+// bucket: legit users throttle each other and a single abuser can DoS everyone).
+// Deliberately `1`, not `true` — `true` trusts a fully client-spoofable XFF chain.
+app.set("trust proxy", 1);
+
 // Parse comma-separated CORS origins from env (trimmed, empties removed) so the
 // deployed frontend and local dev both work without code edits. Defaults to
 // local Vite. e.g. CORS_ORIGIN=https://2gather.vercel.app,http://localhost:5173

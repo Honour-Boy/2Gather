@@ -18,6 +18,7 @@ const {
 } = require("./verseRecommend");
 const { THEMES, TRANSLATION, getVersesByTheme } = require("./verses");
 const { getTemplatesByTheme, PRAYER_TEMPLATES } = require("./prayerTemplates");
+const { createRateLimiter } = require("./rateLimit");
 
 const MAX_TOPIC_LEN = 300;
 
@@ -100,23 +101,13 @@ async function generatePrayer({ topic, theme, hasVerse } = {}, deps = {}) {
 }
 
 // --- Light per-IP rate limit (the shared AI budget is the real ceiling) ---
-const RATE = { windowMs: 60_000, max: 15 };
-const hits = new Map();
-function rateLimited(ip) {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + RATE.windowMs });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > RATE.max;
-}
+const limiter = createRateLimiter({ windowMs: 60_000, max: 15 });
 
 // POST /api/prayer-templates/generate  { topic?: string, theme?: slug, hasVerse?: bool }
 async function generateHandler(req, res) {
-  const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
-  if (rateLimited(ip)) {
+  // With `trust proxy` set in server.js, req.ip is the real client (resolved from
+  // X-Forwarded-For), so the limit is genuinely per-caller.
+  if (limiter.limited(req.ip || "unknown")) {
     return res.status(429).json({ error: "Too many requests. Please slow down a moment." });
   }
 
@@ -146,7 +137,7 @@ async function generateHandler(req, res) {
 }
 
 function _resetState() {
-  hits.clear();
+  limiter._reset();
 }
 
 module.exports = {
