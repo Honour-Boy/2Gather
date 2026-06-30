@@ -82,6 +82,16 @@ test("Delete invokes the delete service for this message", () => {
   expect(deleteChatMessage).toHaveBeenCalledWith({ chatId: "chat1", messageId: "m1" });
 });
 
+test("Edit hands the message up to the composer (no inline editor in the bubble)", () => {
+  const onStartEdit = jest.fn();
+  renderBubble({ onStartEdit });
+  fireEvent.contextMenu(screen.getByText("Peace be with you"));
+  fireEvent.click(screen.getByText("Edit"));
+
+  expect(onStartEdit).toHaveBeenCalledWith(expect.objectContaining({ id: "m1" }));
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument(); // editing isn't inline
+});
+
 test("on mobile, opening the menu lifts the bubble into a focus overlay (menu not duplicated)", () => {
   // Force the mobile branch: a bright copy of the bubble + the menu render in a
   // portal, so the message text appears twice and the actions exactly once.
