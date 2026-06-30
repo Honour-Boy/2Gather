@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { format } from "timeago.js";
 import useLongPress from "@/hooks/useLongPress";
+import useExclusivePopup from "@/hooks/useExclusivePopup";
 import RecipientPicker from "@/components/chat/RecipientPicker";
 import {
   editChatMessage,
@@ -41,6 +42,11 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   const isDeleted = message.deleted === true;
   const isEdited = !!message.editedAt && !isDeleted;
 
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+    setFocusRect(null);
+  }, []);
+  const claimMenu = useExclusivePopup(menuOpen, closeMenu); // single active popup
   const openMenu = () => {
     if (isDeleted || editing) return;
     // Capture the bubble's position for the mobile focus overlay; desktop uses
@@ -51,10 +57,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
         : null
     );
     setMenuOpen(true);
-  };
-  const closeMenu = () => {
-    setMenuOpen(false);
-    setFocusRect(null);
+    claimMenu();
   };
   const longPress = useLongPress(openMenu);
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchVerses } from "@/lib/verses";
 import PopoverPanel from "@/components/ui/PopoverPanel";
+import useExclusivePopup from "@/hooks/useExclusivePopup";
 
 // A composer button that opens a compact, centered panel of Bible verses. Picking
 // one prefills the composer with the verse quoted + attributed, so the user can
@@ -27,6 +28,9 @@ export default function VersePicker({ onPick, disabled, theme }) {
     };
   }, [open, theme]);
 
+  const close = useCallback(() => setOpen(false), []);
+  const claim = useExclusivePopup(open, close); // single active popup
+
   const pick = (v) => {
     onPick?.(`“${v.text}” — ${v.reference} (WEB)`);
     setOpen(false);
@@ -36,7 +40,13 @@ export default function VersePicker({ onPick, disabled, theme }) {
     <div className="relative">
       <button
         type="button"
-        onClick={() => !disabled && setOpen((p) => !p)}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((p) => {
+            if (!p) claim();
+            return !p;
+          });
+        }}
         disabled={disabled}
         aria-label="Share a verse"
         aria-expanded={open}
@@ -50,7 +60,7 @@ export default function VersePicker({ onPick, disabled, theme }) {
       </button>
 
       {open && (
-        <PopoverPanel title="Share a verse" onClose={() => setOpen(false)}>
+        <PopoverPanel title="Share a verse" onClose={close}>
           {status === "loading" && (
             <p className="px-2 py-3 text-sm text-uni-muted">Loading…</p>
           )}
