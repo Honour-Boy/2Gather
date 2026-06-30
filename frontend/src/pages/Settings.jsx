@@ -12,6 +12,11 @@ import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
 import { db } from "@/lib/firebase";
 import useUserStore from "@/store/userStore";
+import {
+  splitProfile,
+  savePrivateProfile,
+  stripPrivateFromPublic,
+} from "@/services/profile";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 import Avatar from "@/components/ui/Avatar";
 import { enableNotifications } from "@/lib/messaging";
@@ -203,13 +208,22 @@ const Settings = () => {
         }
       }
 
-      const patch = FIELDS.reduce(
+      const allFields = FIELDS.reduce(
         (acc, f) => ({ ...acc, [f]: f === "username" ? username : form[f] }),
         {}
       );
-      patch.notificationPrefs = form.notificationPrefs;
-      patch.aiPrayerTemplates = !!form.aiPrayerTemplates;
+      // dob/gender go to the owner-only private subdoc; everything else to the
+      // public doc. stripPrivateFromPublic() also removes any legacy dob/gender
+      // still sitting on the public doc, migrating them off on first save.
+      const { pub, priv } = splitProfile(allFields);
+      const patch = {
+        ...pub,
+        ...stripPrivateFromPublic(),
+        notificationPrefs: form.notificationPrefs,
+        aiPrayerTemplates: !!form.aiPrayerTemplates,
+      };
       await updateDoc(doc(db, "users", currentUser.id), patch);
+      await savePrivateProfile(currentUser.id, priv);
 
       // Refresh the store so the rest of the app reflects the edits immediately.
       await fetchUserInfo(currentUser.id);

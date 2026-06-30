@@ -1,6 +1,5 @@
-﻿import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase"; // Ensure the correct path to firebase.js
-import { create } from "zustand";
+﻿import { create } from "zustand";
+import { fetchFullProfile } from "@/services/profile";
 
 const useUserStore = create((set, get) => ({
   currentUser: null,
@@ -19,11 +18,13 @@ const useUserStore = create((set, get) => ({
     if (!existing || existing.id !== uid) set({ isLoading: true });
 
     try {
-      const docRef = doc(db, "users", uid);
-      const docSnap = await getDoc(docRef);
+      // Merges the public users/{uid} doc with the owner-only private subdoc
+      // (dob/gender) — this always runs for the signed-in user reading their own
+      // profile, so the private read is permitted.
+      const profile = await fetchFullProfile(uid);
 
-      if (docSnap.exists()) {
-        set({ currentUser: docSnap.data(), isLoading: false });
+      if (profile) {
+        set({ currentUser: profile, isLoading: false });
       } else {
         // Not an error: a brand-new account (e.g. a fresh Google sign-in) has
         // no profile doc yet. The route guards send these users to onboarding.

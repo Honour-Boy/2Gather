@@ -6,6 +6,7 @@ import { where, query } from "firebase/firestore";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
 import useUserStore from "@/store/userStore";
+import { splitProfile, savePrivateProfile } from "@/services/profile";
 
 const Profile = () => {
   const [section, setSection] = useState(0);
@@ -51,14 +52,13 @@ const Profile = () => {
     }
 
     try {
-      const userProfile = {
-        username,
-        dob,
-        bio,
-        gender,
-      };
+      // dob/gender are PII → they go to the owner-only private subdoc, not the
+      // world-readable users/{uid} doc. splitProfile partitions by the configured
+      // private-field list.
+      const { pub, priv } = splitProfile({ username, dob, bio, gender });
 
-      await setDoc(doc(db, "users", user.uid), userProfile, { merge: true });
+      await setDoc(doc(db, "users", user.uid), pub, { merge: true });
+      await savePrivateProfile(user.uid, priv);
 
       // Refresh the store so the now-complete profile (username set) is in
       // currentUser before we route to /chat — otherwise the /chat guard would
