@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchPrayerTemplates } from "@/lib/prayerTemplates";
 import { subscribeCustomTemplates } from "@/services/customTemplates";
 import useUserStore from "@/store/userStore";
 import GeneratePrayerModal from "@/components/chat/GeneratePrayerModal";
 import PopoverPanel from "@/components/ui/PopoverPanel";
+import useExclusivePopup from "@/hooks/useExclusivePopup";
 import { enableAiPrayerTemplates } from "@/services/aiPrefs";
 
 // A composer button that opens a compact, centered panel of prayer templates.
@@ -46,7 +47,8 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
     return () => unsub();
   }, [open, uid]);
 
-  const close = () => setOpen(false);
+  const close = useCallback(() => setOpen(false), []);
+  const claim = useExclusivePopup(open, close); // single active popup
 
   const pick = (body) => {
     onPick?.(body);
@@ -65,7 +67,13 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
     <div className="relative">
       <button
         type="button"
-        onClick={() => !disabled && setOpen((p) => !p)}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((p) => {
+            if (!p) claim();
+            return !p;
+          });
+        }}
         disabled={disabled}
         aria-label="Prayer templates"
         aria-expanded={open}

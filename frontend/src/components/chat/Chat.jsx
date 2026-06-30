@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   collection,
   doc,
@@ -22,6 +22,7 @@ import PrayerTemplates from "@/components/chat/PrayerTemplates";
 import VersePicker from "@/components/chat/VersePicker";
 import useModeStore from "@/store/modeStore";
 import { themeForMode } from "@/lib/modes";
+import useExclusivePopup from "@/hooks/useExclusivePopup";
 
 // How many messages to load initially and per "load older" click.
 const PAGE_SIZE = 25;
@@ -119,6 +120,10 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
     const id = setInterval(() => setTick((v) => v + 1), 30000);
     return () => clearInterval(id);
   }, []);
+
+  // Emoji picker participates in the single-active-popup rule.
+  const closeEmoji = useCallback(() => setOpenEmoji(false), []);
+  const claimEmoji = useExclusivePopup(openEmoji, closeEmoji);
 
   const online = isUserOnline(liveUser);
   const effectiveReceiver = liveUser || user;
@@ -348,7 +353,13 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             <div className="relative hidden sm:block">
               <button
                 type="button"
-                onClick={() => !isReceiverBlocked && setOpenEmoji((p) => !p)}
+                onClick={() => {
+                  if (isReceiverBlocked) return;
+                  setOpenEmoji((p) => {
+                    if (!p) claimEmoji();
+                    return !p;
+                  });
+                }}
                 className="p-1.5 rounded-full text-uni-muted hover:text-uni-text hover:bg-black/5 transition-colors"
                 aria-label={"Emoji"}
               >
