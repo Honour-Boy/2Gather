@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { format } from "timeago.js";
 import useLongPress from "@/hooks/useLongPress";
 import RecipientPicker from "@/components/chat/RecipientPicker";
@@ -15,25 +16,60 @@ import notify from "@/lib/toast";
 // (PC) or long-press (mobile), plus a hover ⋯ on desktop, so the bubble stays
 // clean. Deleted messages show a tombstone. Sent messages use the warm gold
 // bubble; received use a light card.
+//
+// MOBILE long-press = WhatsApp-style focus: the pressed bubble lifts above a
+// dimmed+blurred backdrop (a bright copy at its measured position) and the action
+// menu sits directly above or below it (whichever fits) — never over the message.
+// DESKTOP keeps the small dropdown anchored to the bubble.
+const isMobileViewport = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(max-width: 639px)").matches;
+
 const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // When set (mobile only), render the focus overlay anchored to this rect.
+  const [focusRect, setFocusRect] = useState(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.text || "");
   const [busy, setBusy] = useState(false);
   const [forwarding, setForwarding] = useState(false);
+  const bubbleRef = useRef(null);
 
   const isPrayer = message.kind === "prayer";
   const isDeleted = message.deleted === true;
   const isEdited = !!message.editedAt && !isDeleted;
 
   const openMenu = () => {
-    if (!isDeleted && !editing) setMenuOpen(true);
+    if (isDeleted || editing) return;
+    // Capture the bubble's position for the mobile focus overlay; desktop uses
+    // the anchored dropdown (focusRect stays null).
+    setFocusRect(
+      isMobileViewport() && bubbleRef.current
+        ? bubbleRef.current.getBoundingClientRect()
+        : null
+    );
+    setMenuOpen(true);
+  };
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setFocusRect(null);
   };
   const longPress = useLongPress(openMenu);
 
+  // Shared bubble-box styling (compact on mobile) — reused by the inline bubble
+  // and its lifted copy in the focus overlay, so they look identical.
+  const bubbleBoxCls = `px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-[13px] sm:text-sm md:text-[15px] leading-relaxed break-words ${
+    isDeleted
+      ? "bg-uni-surface text-uni-muted italic border border-uni-border rounded-bl-md"
+      : isMine
+        ? "bg-bubble-sent text-uni-on-accent font-medium shadow-bubble rounded-br-md"
+        : "bg-uni-surface text-uni-text rounded-bl-md border border-uni-border"
+  }${isPrayer && !isDeleted ? " ring-1 ring-uni-gold/30" : ""}`;
+
   const doCopy = async () => {
-    setMenuOpen(false);
+    closeMenu();
     try {
       await navigator.clipboard.writeText(message.text || "");
       notify.success("Copied.");
@@ -43,7 +79,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   };
 
   const doSave = () => {
-    setMenuOpen(false);
+    closeMenu();
     onSave?.(message.text);
     setSaved(true);
   };
@@ -51,7 +87,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   const startEdit = () => {
     setDraft(message.text || "");
     setEditing(true);
-    setMenuOpen(false);
+    closeMenu();
   };
 
   const saveEdit = async () => {
@@ -76,7 +112,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   };
 
   const doDelete = async () => {
-    setMenuOpen(false);
+    closeMenu();
     if (busy) return;
     setBusy(true);
     try {
@@ -105,7 +141,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
 
   const actions = [{ label: "Copy", onClick: doCopy }];
   if (!isDeleted) {
-    actions.push({ label: "Forward", onClick: () => { setMenuOpen(false); setForwarding(true); } });
+    actions.push({ label: "Forward", onClick: () => { closeMenu(); setForwarding(true); } });
     if (isPrayer && onSave) {
       actions.push({ label: saved ? "Saved ✓" : "Save to journal", onClick: doSave, disabled: saved });
     }
@@ -161,19 +197,14 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
         ) : (
           <div className={`group flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
             <div
+              ref={bubbleRef}
               onContextMenu={(e) => {
-                if (isDeleted) return;
+                if (isDeleted || editing) return;
                 e.preventDefault();
-                setMenuOpen(true);
+                openMenu();
               }}
               {...longPress}
-              className={`px-4 py-2.5 rounded-2xl text-sm md:text-[15px] leading-relaxed break-words ${
-                isDeleted
-                  ? "bg-uni-surface text-uni-muted italic border border-uni-border rounded-bl-md"
-                  : isMine
-                    ? "bg-bubble-sent text-uni-on-accent font-medium shadow-bubble rounded-br-md"
-                    : "bg-uni-surface text-uni-text rounded-bl-md border border-uni-border"
-              }${isPrayer && !isDeleted ? " ring-1 ring-uni-gold/30" : ""}`}
+              className={bubbleBoxCls}
             >
               {isDeleted ? (
                 <p className="text-left">This message was deleted</p>
@@ -210,32 +241,18 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
           {isEdited && <span className="text-[10px] text-uni-muted italic">edited</span>}
         </div>
 
-        {/* Action menu — bottom sheet on mobile, dropdown on desktop. */}
-        {menuOpen && (
+        {/* Desktop: a small dropdown anchored under the bubble. (Mobile uses the
+            focus overlay below.) */}
+        {menuOpen && !focusRect && (
           <>
+            <div onClick={closeMenu} className="fixed inset-0 z-40" />
             <div
-              onClick={() => setMenuOpen(false)}
-              className="fixed inset-0 z-40 bg-black/40 sm:bg-transparent"
-            />
-            <div
-              className={`fixed inset-x-0 bottom-0 z-50 rounded-t-2xl pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:mt-1 sm:w-44 sm:rounded-xl sm:pb-1.5 border border-uni-border bg-uni-surface shadow-card p-1.5 ${
-                isMine ? "sm:right-0" : "sm:left-0"
+              className={`absolute top-full mt-1 w-44 z-50 rounded-xl border border-uni-border bg-uni-surface shadow-card p-1.5 ${
+                isMine ? "right-0" : "left-0"
               }`}
             >
               {actions.map((a) => (
-                <button
-                  key={a.label}
-                  type="button"
-                  onClick={a.onClick}
-                  disabled={a.disabled}
-                  className={`w-full text-left px-3 py-2.5 sm:py-2 rounded-xl text-sm transition-colors disabled:opacity-50 ${
-                    a.danger
-                      ? "text-red-600 hover:bg-red-500/10"
-                      : "text-uni-text hover:bg-uni-surface2"
-                  }`}
-                >
-                  {a.label}
-                </button>
+                <ActionMenuButton key={a.label} action={a} />
               ))}
             </div>
           </>
@@ -251,6 +268,91 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
             onClose={() => setForwarding(false)}
           />
         )}
+      </div>
+
+      {/* Mobile: WhatsApp-style focus overlay (portal to body so it escapes any
+          scroll/stacking context). The pressed bubble lifts above a dimmed,
+          blurred backdrop and the menu sits directly above/below it. */}
+      {menuOpen && focusRect &&
+        createPortal(
+          <MobileFocusMenu
+            rect={focusRect}
+            isMine={isMine}
+            isPrayer={isPrayer}
+            bubbleBoxCls={bubbleBoxCls}
+            text={message.text}
+            actions={actions}
+            onClose={closeMenu}
+          />,
+          document.body
+        )}
+    </div>
+  );
+};
+
+// One row in either menu. Compact but keeps a ≥44px touch target on mobile.
+const ActionMenuButton = ({ action: a }) => (
+  <button
+    type="button"
+    onClick={a.onClick}
+    disabled={a.disabled}
+    className={`w-full text-left px-3 py-3 sm:py-2 rounded-xl text-sm transition-colors active:scale-[0.98] disabled:opacity-50 ${
+      a.danger ? "text-red-600 hover:bg-red-500/10" : "text-uni-text hover:bg-uni-surface2"
+    }`}
+  >
+    {a.label}
+  </button>
+);
+
+// The mobile focus overlay. Anchors a bright copy of the pressed bubble to its
+// on-screen rect over a dimmed backdrop, and places the action menu directly
+// above or below it — whichever side has room — so it never covers the message.
+const MobileFocusMenu = ({ rect, isMine, isPrayer, bubbleBoxCls, text, actions, onClose }) => {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const GAP = 10;
+  const estMenuH = actions.length * 48 + 12;
+  // Prefer below; flip above when the bubble sits low enough that the menu
+  // wouldn't fit under it.
+  const below = rect.bottom + GAP + estMenuH <= vh - 12;
+
+  const horiz = isMine
+    ? { right: Math.max(8, vw - rect.right) }
+    : { left: Math.max(8, rect.left) };
+  const menuStyle = below
+    ? { ...horiz, top: rect.bottom + GAP }
+    : { ...horiz, top: rect.top - GAP, transform: "translateY(-100%)" };
+
+  return (
+    <div className="sm:hidden fixed inset-0 z-[60]" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+
+      {/* Lifted, bright copy of the pressed bubble at its measured position. */}
+      <div
+        className="absolute flex flex-col"
+        style={{ top: rect.top, left: rect.left, width: rect.width, alignItems: isMine ? "flex-end" : "flex-start" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isPrayer && (
+          <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-uni-gold">
+            <span className="w-1.5 h-1.5 rounded-full bg-uni-gold" />
+            Prayer
+          </span>
+        )}
+        <div className={bubbleBoxCls}>
+          <p className="whitespace-pre-wrap text-left">{text}</p>
+        </div>
+      </div>
+
+      {/* Action menu, anchored to the bubble's side, above or below it. */}
+      <div
+        className="absolute z-[61] w-52 max-w-[78vw] rounded-2xl border border-uni-border bg-uni-surface shadow-card p-1.5 animate-fade-in-up"
+        style={menuStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {actions.map((a) => (
+          <ActionMenuButton key={a.label} action={a} />
+        ))}
       </div>
     </div>
   );
