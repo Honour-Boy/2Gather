@@ -39,7 +39,7 @@ jest.mock("../config/firebaseAdmins", () => {
 });
 
 const admin = require("../config/firebaseAdmins");
-const { syncChatIndex, userchatsSyncHandler } = require("../userchats");
+const { syncChatIndex, userchatsSyncHandler, _resetState } = require("../userchats");
 
 const resMock = () => {
   const res = {};
@@ -52,6 +52,7 @@ beforeEach(() => {
   admin.__state.docData = {};
   admin.__state.messages = {};
   admin.__state.sets = [];
+  _resetState(); // clear the per-user sync throttle between tests
   jest.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => console.error.mockRestore());
@@ -120,5 +121,22 @@ describe("userchatsSyncHandler", () => {
     await userchatsSyncHandler({ headers: { authorization: "Bearer valid" }, body: { chatId: "chat1" } }, res);
     expect(res.json).toHaveBeenCalledWith({ ok: true });
     expect(admin.__state.sets).toHaveLength(2);
+  });
+
+  test("throttles a noisy valid caller (429 after the per-user cap)", async () => {
+    admin.__state.docData["chats/chat1"] = { participantIds: ["userA", "userB"] };
+    let limited = false;
+    for (let i = 0; i < 65; i++) {
+      const res = resMock();
+      await userchatsSyncHandler(
+        { headers: { authorization: "Bearer valid" }, body: { chatId: "chat1" } },
+        res
+      );
+      if (res.status.mock.calls.some((c) => c[0] === 429)) {
+        limited = true;
+        break;
+      }
+    }
+    expect(limited).toBe(true);
   });
 });

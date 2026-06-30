@@ -10,6 +10,7 @@
 const axios = require("axios");
 const { parseReference, humanBook } = require("./bibleRef");
 const { isCacheableId, abbrForId } = require("./translations");
+const { intEnv, createDailyBudget, createBreaker } = require("./aiGuards");
 
 const DEFAULTS = {
   baseUrl: "https://rest.api.bible/v1",
@@ -19,12 +20,6 @@ const DEFAULTS = {
   dailyLimit: 4500, // stay under the 5K/day free tier
   timeoutMs: 8000,
 };
-
-function intEnv(name, def, min, max) {
-  const n = parseInt(process.env[name], 10);
-  if (Number.isNaN(n)) return def;
-  return Math.max(min, Math.min(max, n));
-}
 
 function bibleConfig() {
   return {
@@ -37,29 +32,15 @@ function bibleConfig() {
 }
 
 // --- per-day API-call budget + breaker + cache ---
-const budget = { day: "", count: 0 };
-const utcDay = () => new Date().toISOString().slice(0, 10);
-function rollDay() {
-  if (budget.day !== utcDay()) {
-    budget.day = utcDay();
-    budget.count = 0;
-  }
-}
-function budgetRemaining() {
-  rollDay();
-  return bibleConfig().dailyLimit - budget.count;
-}
-function noteCall() {
-  rollDay();
-  budget.count += 1;
-}
+// The limit is read live so BIBLE_DAILY_LIMIT overrides apply without restart.
+const budget = createDailyBudget(() => bibleConfig().dailyLimit);
+const budgetRemaining = () => budget.remaining();
+const noteCall = () => budget.note();
 
 const BREAKER_MS = 30 * 60_000;
-let breakerUntil = 0;
-const breakerOpen = () => Date.now() < breakerUntil;
-const tripBreaker = () => {
-  breakerUntil = Date.now() + BREAKER_MS;
-};
+const breaker = createBreaker(BREAKER_MS);
+const breakerOpen = () => breaker.open();
+const tripBreaker = () => breaker.trip();
 
 // Resolved text is public-domain + immutable → cache hard (24h), bounded.
 const CACHE_TTL = 24 * 60 * 60_000;
@@ -194,9 +175,8 @@ async function listBibles(language = "eng") {
 }
 
 function _resetState() {
-  budget.day = "";
-  budget.count = 0;
-  breakerUntil = 0;
+  budget.reset();
+  breaker.reset();
   cache.clear();
 }
 

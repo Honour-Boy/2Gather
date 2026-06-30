@@ -16,6 +16,8 @@ const { THEMES, TRANSLATION, VERSES, getVersesByTheme } = require("./verses");
 const bibleApi = require("./bibleApi");
 const { parseReference } = require("./bibleRef");
 const { bibleIdFor } = require("./translations");
+const { intEnv, createDailyBudget, createBreaker } = require("./aiGuards");
+const { createRateLimiter } = require("./rateLimit");
 
 // --- Keyword → theme mapping (the no-LLM path, and how we pick candidates) ---
 // A request can hit several themes (e.g. "anxious" → courage + peace); we score
@@ -151,12 +153,6 @@ const SYSTEM_PROMPT =
   'by semicolons (e.g. "John 16:33; Philippians 4:13; Isaiah 41:10"). Do NOT quote the ' +
   "verse text, do not write a prayer, do not add any commentary.";
 
-function intEnv(name, def, min, max) {
-  const n = parseInt(process.env[name], 10);
-  if (Number.isNaN(n)) return def;
-  return Math.max(min, Math.min(max, n));
-}
-
 function aiConfig() {
   return {
     apiKey: process.env.AI_API_KEY || "",
@@ -170,32 +166,18 @@ function aiConfig() {
 
 // Per-day call budget (UTC). In-memory — resets on restart, which is fine; the
 // OpenAI usage limit is the real ceiling. One unit ≈ one prayer-request served
-// by the LLM (its bounded retries don't each cost a unit).
-const budget = { day: "", count: 0 };
-const utcDay = () => new Date().toISOString().slice(0, 10);
-function rollDay() {
-  if (budget.day !== utcDay()) {
-    budget.day = utcDay();
-    budget.count = 0;
-  }
-}
-function budgetRemaining() {
-  rollDay();
-  return aiConfig().dailyLimit - budget.count;
-}
-function noteLlmCall() {
-  rollDay();
-  budget.count += 1;
-}
+// by the LLM (its bounded retries don't each cost a unit). The limit is read live
+// so AI_DAILY_LIMIT overrides apply without restart.
+const aiBudget = createDailyBudget(() => aiConfig().dailyLimit);
+const budgetRemaining = () => aiBudget.remaining();
+const noteLlmCall = () => aiBudget.note();
 
 // Circuit breaker — once a bad key / exhausted quota is seen, stop calling for a
 // cooldown so we don't hammer a dead key. While open, requests use the fallback.
 const BREAKER_MS = 30 * 60_000;
-let breakerUntil = 0;
-const breakerOpen = () => Date.now() < breakerUntil;
-const tripBreaker = () => {
-  breakerUntil = Date.now() + BREAKER_MS;
-};
+const breaker = createBreaker(BREAKER_MS);
+const breakerOpen = () => breaker.open();
+const tripBreaker = () => breaker.trip();
 
 // Is a live LLM call permitted right now? (key present, breaker closed, budget left)
 function aiAvailable() {
@@ -387,18 +369,7 @@ async function recommendVerses({ request, theme, bibleId } = {}, deps = {}) {
 }
 
 // --- Lightweight in-memory rate limit + cache (single Render instance) ---
-const RATE = { windowMs: 60_000, max: 20 };
-const hits = new Map(); // ip -> { count, resetAt }
-function rateLimited(ip) {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + RATE.windowMs });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > RATE.max;
-}
+const limiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 
 // Cache the AI's chosen REFERENCES (verse ids only — translation-independent and
 // safe to store, unlike licensed text) keyed by request+theme. An identical
@@ -422,17 +393,17 @@ function refSet(key, refs) {
 // Test helper: clear the limiter + cache + AI budget/breaker so suites don't leak
 // state into each other.
 function _resetState() {
-  hits.clear();
+  limiter._reset();
   refCache.clear();
-  budget.day = "";
-  budget.count = 0;
-  breakerUntil = 0;
+  aiBudget.reset();
+  breaker.reset();
 }
 
 // POST /api/verses/recommend  { request: string, theme?: themeSlug }
 async function recommendHandler(req, res) {
-  const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
-  if (rateLimited(ip)) {
+  // With `trust proxy` set in server.js, req.ip is the real client (resolved from
+  // X-Forwarded-For), so the limit is genuinely per-caller.
+  if (limiter.limited(req.ip || "unknown")) {
     return res.status(429).json({ error: "Too many requests. Please slow down a moment." });
   }
 
