@@ -167,6 +167,7 @@ const JournalEntry = ({ uid, entry, currentUser, onDelete }) => {
             kind={shareKind}
             currentUser={currentUser}
             preview={text}
+            note={entry.note}
             label="Send to a chat"
           />
           <button
