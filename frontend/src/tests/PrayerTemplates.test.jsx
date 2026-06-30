@@ -12,11 +12,15 @@ jest.mock("@/lib/prayerTemplates", () => ({
 jest.mock("@/services/customTemplates", () => ({
   subscribeCustomTemplates: jest.fn(() => () => {}),
 }));
+jest.mock("@/services/aiPrefs", () => ({
+  enableAiPrayerTemplates: jest.fn().mockResolvedValue(),
+}));
 jest.mock("@/store/userStore", () => ({ __esModule: true, default: jest.fn() }));
 
 beforeEach(() => {
   useUserStore.mockReturnValue({
     currentUser: { id: "me", aiPrayerTemplates: false },
+    fetchUserInfo: jest.fn(),
   });
 });
 afterEach(() => jest.clearAllMocks());
@@ -44,23 +48,19 @@ test("does nothing when disabled", () => {
   expect(onPick).not.toHaveBeenCalled();
 });
 
-test("no AI generate option when the toggle is off", async () => {
+test("the Generate-a-prayer wizard is available even with the AI toggle off", async () => {
   fetchPrayerTemplates.mockResolvedValue([]);
-  render(<PrayerTemplates onPick={() => {}} />);
+  render(<PrayerTemplates onPick={() => {}} />); // aiPrayerTemplates: false
 
   fireEvent.click(screen.getByLabelText(/prayer templates/i));
-  await waitFor(() => expect(fetchPrayerTemplates).toHaveBeenCalled());
-  expect(screen.queryByText("✨ Generate a prayer")).not.toBeInTheDocument();
+  expect(await screen.findByText("✨ Generate a prayer")).toBeInTheDocument();
 });
 
-test("AI enabled: generates a prayer and picks it together with the suggested verse", async () => {
-  useUserStore.mockReturnValue({
-    currentUser: { id: "me", aiPrayerTemplates: true },
-  });
+test("generates a prayer that includes the user's scripture and picks the editable result", async () => {
   fetchPrayerTemplates.mockResolvedValue([]);
   generatePrayer.mockResolvedValue({
     prayer: "Lord, steady my heart. Amen.",
-    verse: { reference: "Isaiah 41:10", text: "Do not fear", translation: "WEB" },
+    verse: null,
     source: "llm",
   });
   const onPick = jest.fn();
@@ -69,13 +69,20 @@ test("AI enabled: generates a prayer and picks it together with the suggested ve
   fireEvent.click(screen.getByLabelText(/prayer templates/i));
   fireEvent.click(await screen.findByText("✨ Generate a prayer"));
 
-  await waitFor(() =>
-    expect(screen.getByText("Lord, steady my heart. Amen.")).toBeInTheDocument()
-  );
-  expect(generatePrayer).toHaveBeenCalledWith({ theme: "courage", hasVerse: false });
+  // Required scripture (the prayer is based on it; it must appear in the output).
+  fireEvent.change(screen.getByLabelText(/scripture or verse/i), {
+    target: { value: "Isaiah 41:10" },
+  });
+  fireEvent.click(screen.getByText("Generate Prayer"));
 
-  fireEvent.click(screen.getByText("Use with verse"));
-  expect(onPick).toHaveBeenCalledWith(
-    "Lord, steady my heart. Amen.\n\n“Do not fear” — Isaiah 41:10 (WEB)"
+  const result = await screen.findByLabelText(/your prayer/i);
+  await waitFor(() => expect(result.value).toContain("Lord, steady my heart. Amen."));
+  expect(result.value).toContain("“Isaiah 41:10”"); // scripture quoted in the result
+  // The model writes prose only; its own verse suggestion is suppressed (hasVerse).
+  expect(generatePrayer).toHaveBeenCalledWith(
+    expect.objectContaining({ theme: "courage", hasVerse: true })
   );
+
+  fireEvent.click(screen.getByText("Use this prayer"));
+  expect(onPick).toHaveBeenCalledWith('Lord, steady my heart. Amen.\n\n“Isaiah 41:10”');
 });

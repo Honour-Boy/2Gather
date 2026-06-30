@@ -1,25 +1,23 @@
 import { useEffect, useState } from "react";
-import { fetchPrayerTemplates, generatePrayer } from "@/lib/prayerTemplates";
+import { fetchPrayerTemplates } from "@/lib/prayerTemplates";
 import { subscribeCustomTemplates } from "@/services/customTemplates";
 import useUserStore from "@/store/userStore";
+import GeneratePrayerModal from "@/components/chat/GeneratePrayerModal";
+import { enableAiPrayerTemplates } from "@/services/aiPrefs";
 
 // A composer button that opens a popover of prayer templates. Picking one calls
 // onPick(body) so the chat composer can prefill an editable prayer. Sources, in
-// order: an opt-in AI "generate a prayer" flow (only when the user has enabled it
-// in settings), the user's own custom templates, then the curated set. Bottom
-// sheet on mobile, dropdown on desktop. Loads lazily on first open.
+// order: a "Generate a prayer" wizard (AI-assisted, available to everyone), the
+// user's own custom templates, then the curated set. Bottom sheet on mobile,
+// dropdown on desktop. Loads lazily on first open.
 export default function PrayerTemplates({ onPick, disabled, theme }) {
   const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
   const [custom, setCustom] = useState([]);
+  const [genOpen, setGenOpen] = useState(false);
 
-  // AI generate flow state.
-  const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(null); // { prayer, verse, source, support }
-  const [genError, setGenError] = useState(false);
-
-  const { currentUser } = useUserStore();
+  const { currentUser, fetchUserInfo } = useUserStore();
   const uid = currentUser?.id;
   const aiEnabled = !!currentUser?.aiPrayerTemplates;
 
@@ -47,32 +45,19 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
     return () => unsub();
   }, [open, uid]);
 
-  const close = () => {
-    setOpen(false);
-    setGenerated(null);
-    setGenError(false);
-  };
+  const close = () => setOpen(false);
 
   const pick = (body) => {
     onPick?.(body);
     close();
   };
 
-  const verseLine = (v) =>
-    `“${v.text}” — ${v.reference} (${v.translation || "WEB"})`;
-
-  const generate = async () => {
-    setGenerating(true);
-    setGenError(false);
-    setGenerated(null);
-    try {
-      const result = await generatePrayer({ theme, hasVerse: false });
-      setGenerated(result);
-    } catch {
-      setGenError(true);
-    } finally {
-      setGenerating(false);
-    }
+  // First real generation persists AI consent so Settings remembers it.
+  const handleConsent = () => {
+    if (!uid) return;
+    Promise.resolve(enableAiPrayerTemplates(uid))
+      .then(() => fetchUserInfo?.(uid))
+      .catch(() => {});
   };
 
   return (
@@ -101,74 +86,19 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
               Prayer templates
             </p>
 
-            {/* AI generate (opt-in) */}
-            {aiEnabled && (
-              <div className="mb-2 px-1">
-                {generated ? (
-                  <div className="rounded-xl border border-uni-gold/30 bg-brand-soft p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-uni-gold mb-1.5">
-                      ✨ AI-assisted — edit before sending
-                    </p>
-                    {generated.support && (
-                      <p className="text-xs text-uni-text mb-2 leading-relaxed">
-                        {generated.support}
-                      </p>
-                    )}
-                    <p className="text-sm text-uni-text whitespace-pre-wrap leading-relaxed">
-                      {generated.prayer}
-                    </p>
-                    {generated.verse && (
-                      <p className="mt-2 text-xs text-uni-muted leading-relaxed">
-                        Suggested verse — {generated.verse.reference}:{" "}
-                        “{generated.verse.text}”
-                      </p>
-                    )}
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => pick(generated.prayer)}
-                        className="px-3 py-1.5 text-xs font-bold text-uni-on-accent rounded-lg bg-brand shadow-bubble hover:shadow-glow transition-all"
-                      >
-                        Use prayer
-                      </button>
-                      {generated.verse && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            pick(`${generated.prayer}\n\n${verseLine(generated.verse)}`)
-                          }
-                          className="px-3 py-1.5 text-xs font-semibold text-uni-text rounded-lg bg-uni-surface border border-uni-border hover:border-uni-gold/50 transition-colors"
-                        >
-                          Use with verse
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={generate}
-                        disabled={generating}
-                        className="px-3 py-1.5 text-xs font-semibold text-uni-muted hover:text-uni-text"
-                      >
-                        Regenerate
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={generate}
-                    disabled={generating}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded-xl bg-brand-soft border border-uni-gold/30 text-uni-text hover:border-uni-gold/60 disabled:opacity-60 transition-colors"
-                  >
-                    {generating ? "Writing a prayer…" : "✨ Generate a prayer"}
-                  </button>
-                )}
-                {genError && (
-                  <p className="mt-1 px-1 text-xs text-uni-muted">
-                    Couldn’t generate right now. Try a template below.
-                  </p>
-                )}
-              </div>
-            )}
+            {/* Generate a prayer (AI-assisted; available to everyone, disclosed). */}
+            <div className="mb-2 px-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false); // single active popup: close the picker first
+                  setGenOpen(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded-xl bg-brand-soft border border-uni-gold/30 text-uni-text hover:border-uni-gold/60 transition-colors"
+              >
+                ✨ Generate a prayer
+              </button>
+            </div>
 
             {/* Your custom templates */}
             {custom.length > 0 && (
@@ -183,7 +113,7 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
             )}
 
             {/* Curated templates */}
-            {(custom.length > 0 || aiEnabled) && status === "ready" && (
+            {status === "ready" && templates.length > 0 && (
               <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-uni-muted">
                 Curated
               </p>
@@ -202,6 +132,19 @@ export default function PrayerTemplates({ onPick, disabled, theme }) {
               ))}
           </div>
         </>
+      )}
+
+      {genOpen && (
+        <GeneratePrayerModal
+          theme={theme}
+          aiEnabled={aiEnabled}
+          onPick={(t) => {
+            onPick?.(t);
+            setGenOpen(false);
+          }}
+          onClose={() => setGenOpen(false)}
+          onConsent={handleConsent}
+        />
       )}
     </div>
   );
