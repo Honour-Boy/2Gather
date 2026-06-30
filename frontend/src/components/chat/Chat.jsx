@@ -12,7 +12,7 @@ import useChatStore from "@/store/chatStore";
 import useUserStore from "@/store/userStore";
 import EmojiPicker from "emoji-picker-react";
 import { isUserOnline } from "@/hooks/usePresence";
-import { sendChatMessage } from "@/services/messages";
+import { sendChatMessage, editChatMessage } from "@/services/messages";
 import { savePrayerToJournal } from "@/services/journal";
 import notify from "@/lib/toast";
 import MessageBubble from "@/components/chat/MessageBubble";
@@ -39,6 +39,9 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
   // so the sent message is tagged kind: "prayer" (styled in MessageBubble).
   const [pendingKind, setPendingKind] = useState(null);
   const [openEmoji, setOpenEmoji] = useState(false);
+  // WhatsApp-style edit: { id, preview } of the message being edited in the
+  // composer (null when composing a new message).
+  const [editing, setEditing] = useState(null);
 
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, resetChat } =
@@ -144,9 +147,35 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
     }
   };
 
+  // Begin editing a message: load its text into the composer (not the bubble).
+  const startEdit = (message) => {
+    setEditing({ id: message.id, preview: message.text || "" });
+    setPendingKind(null);
+    setText(message.text || "");
+    setOpenEmoji(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setText("");
+  };
+
   const handleSend = () => {
     const t = text.trim();
     if (!t) return;
+
+    // Editing an existing message → save in place, then leave edit mode.
+    if (editing) {
+      const id = editing.id;
+      setEditing(null);
+      setText("");
+      editChatMessage({ chatId, messageId: id, text: t }).catch(() =>
+        notify.error("Couldn’t edit the message. Please try again.")
+      );
+      return;
+    }
+
     const kind = pendingKind;
     setText(""); // clear immediately for a real-time feel
     setPendingKind(null);
@@ -279,6 +308,9 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
             onSave={handleSavePrayer}
             chatId={chatId}
             currentUser={currentUser}
+            onStartEdit={startEdit}
+            isEditing={editing?.id === message.id}
+            dimmed={!!editing && editing.id !== message.id}
           />
         ))}
 
@@ -302,15 +334,40 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
 
       {/* Input bar */}
       <div className="border-t border-uni-border bg-uni-bg px-3 md:px-6 py-3 md:py-4">
+        {/* Editing-message preview (WhatsApp-style): shows what's being altered,
+            with a cancel. Sits directly above the typing bar. */}
+        {editing && (
+          <div className="flex items-center gap-3 mb-2 pl-3 pr-2 py-2 rounded-xl bg-uni-surface border-l-2 border-uni-gold animate-fade-in-up">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-uni-gold">Editing message</p>
+              <p className="text-xs text-uni-muted truncate">{editing.preview}</p>
+            </div>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              aria-label="Cancel edit"
+              className="shrink-0 p-1.5 rounded-lg text-uni-muted hover:text-uni-text hover:bg-uni-surface2 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 md:gap-3">
           <div className="flex-1 flex items-end gap-2 bg-uni-surface border border-uni-border rounded-3xl pl-4 pr-2 py-1.5 focus-within:border-uni-gold/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
             <textarea
               ref={inputRef}
               rows={1}
               placeholder={
-                disabled ? "You cannot send a message" : "Type your message…"
+                disabled
+                  ? "You cannot send a message"
+                  : editing
+                    ? "Edit your message…"
+                    : "Type your message…"
               }
-              aria-label={"Type your message…"}
+              aria-label={editing ? "Edit your message" : "Type your message…"}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
@@ -319,10 +376,13 @@ const Chat = ({ onHeaderClick, detailOpen }) => {
               disabled={disabled}
               className="flex-1 bg-transparent border-none outline-none resize-none uni-scroll text-sm md:text-[15px] leading-relaxed text-uni-text placeholder:text-uni-muted disabled:opacity-50 py-1.5"
               onKeyDown={(e) => {
-                // Enter sends; Shift+Enter inserts a newline.
+                // Enter sends / saves; Shift+Enter inserts a newline; Esc cancels
+                // an in-progress edit.
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSend();
+                } else if (e.key === "Escape" && editing) {
+                  cancelEdit();
                 }
               }}
             />

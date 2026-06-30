@@ -4,11 +4,7 @@ import { format } from "timeago.js";
 import useLongPress from "@/hooks/useLongPress";
 import useExclusivePopup from "@/hooks/useExclusivePopup";
 import RecipientPicker from "@/components/chat/RecipientPicker";
-import {
-  editChatMessage,
-  deleteChatMessage,
-  forwardChatMessage,
-} from "@/services/messages";
+import { deleteChatMessage, forwardChatMessage } from "@/services/messages";
 import notify from "@/lib/toast";
 
 // A single chat message bubble. The text, an optional "Prayer" tag, a timestamp
@@ -27,13 +23,20 @@ const isMobileViewport = () =>
   typeof window.matchMedia === "function" &&
   window.matchMedia("(max-width: 639px)").matches;
 
-const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
+const MessageBubble = ({
+  message,
+  isMine,
+  onSave,
+  chatId,
+  currentUser,
+  onStartEdit,
+  isEditing = false,
+  dimmed = false,
+}) => {
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   // When set (mobile only), render the focus overlay anchored to this rect.
   const [focusRect, setFocusRect] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(message.text || "");
   const [busy, setBusy] = useState(false);
   const [forwarding, setForwarding] = useState(false);
   const bubbleRef = useRef(null);
@@ -48,7 +51,7 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
   }, []);
   const claimMenu = useExclusivePopup(menuOpen, closeMenu); // single active popup
   const openMenu = () => {
-    if (isDeleted || editing) return;
+    if (isDeleted) return;
     // Capture the bubble's position for the mobile focus overlay; desktop uses
     // the anchored dropdown (focusRect stays null).
     setFocusRect(
@@ -87,31 +90,11 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
     setSaved(true);
   };
 
+  // Editing happens in the chat composer (WhatsApp-style), not in the bubble:
+  // hand the message up to the chat, which loads it into the bottom input bar.
   const startEdit = () => {
-    setDraft(message.text || "");
-    setEditing(true);
     closeMenu();
-  };
-
-  const saveEdit = async () => {
-    const text = draft.trim();
-    if (!text || busy) {
-      if (!text) setEditing(false);
-      return;
-    }
-    if (text === message.text) {
-      setEditing(false);
-      return;
-    }
-    setBusy(true);
-    try {
-      await editChatMessage({ chatId, messageId: message.id, text });
-      setEditing(false);
-    } catch {
-      notify.error("Couldn’t edit the message. Please try again.");
-    } finally {
-      setBusy(false);
-    }
+    onStartEdit?.(message);
   };
 
   const doDelete = async () => {
@@ -156,9 +139,9 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
 
   return (
     <div
-      className={`flex w-full ${
+      className={`flex w-full transition-all duration-200 ${
         isMine ? "justify-end animate-slide-in-right" : "justify-start animate-slide-in-left"
-      }`}
+      }${dimmed ? " blur-[1.5px] opacity-50 pointer-events-none select-none" : ""}`}
     >
       <div
         className={`relative flex flex-col max-w-[85%] sm:max-w-[70%] md:max-w-[60%] ${
@@ -172,68 +155,43 @@ const MessageBubble = ({ message, isMine, onSave, chatId, currentUser }) => {
           </span>
         )}
 
-        {editing ? (
-          <div className="w-[min(20rem,80vw)] rounded-2xl border border-uni-border bg-uni-surface p-2">
-            <textarea
-              autoFocus
-              rows={2}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              className="w-full bg-transparent outline-none resize-none uni-scroll text-sm text-uni-text leading-relaxed"
-            />
-            <div className="mt-1 flex justify-end gap-2">
-              <button
-                onClick={() => setEditing(false)}
-                className="px-2.5 py-1 text-xs font-semibold text-uni-muted hover:text-uni-text"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveEdit}
-                disabled={busy}
-                className="px-3 py-1 text-xs font-bold text-uni-on-accent rounded-lg bg-brand shadow-bubble disabled:opacity-50"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={`group flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
-            <div
-              ref={bubbleRef}
-              onContextMenu={(e) => {
-                if (isDeleted || editing) return;
-                e.preventDefault();
-                openMenu();
-              }}
-              {...longPress}
-              className={bubbleBoxCls}
-            >
-              {isDeleted ? (
-                <p className="text-left">This message was deleted</p>
-              ) : (
-                <p className="whitespace-pre-wrap text-left">{message.text}</p>
-              )}
-            </div>
-
-            {/* Desktop discoverability: a ⋯ that appears on hover (mobile uses
-                long-press, so nothing persistent there). */}
-            {!isDeleted && (
-              <button
-                type="button"
-                onClick={openMenu}
-                aria-label="Message actions"
-                className="hidden sm:flex shrink-0 w-7 h-7 items-center justify-center rounded-full text-uni-muted opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-black/5 transition-opacity"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="5" cy="12" r="1.6" />
-                  <circle cx="12" cy="12" r="1.6" />
-                  <circle cx="19" cy="12" r="1.6" />
-                </svg>
-              </button>
+        <div className={`group flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+          <div
+            ref={bubbleRef}
+            onContextMenu={(e) => {
+              if (isDeleted) return;
+              e.preventDefault();
+              openMenu();
+            }}
+            {...longPress}
+            className={`${bubbleBoxCls}${
+              isEditing ? " ring-2 ring-uni-gold ring-offset-2 ring-offset-uni-bg" : ""
+            }`}
+          >
+            {isDeleted ? (
+              <p className="text-left">This message was deleted</p>
+            ) : (
+              <p className="whitespace-pre-wrap text-left">{message.text}</p>
             )}
           </div>
-        )}
+
+          {/* Desktop discoverability: a ⋯ that appears on hover (mobile uses
+              long-press, so nothing persistent there). */}
+          {!isDeleted && (
+            <button
+              type="button"
+              onClick={openMenu}
+              aria-label="Message actions"
+              className="hidden sm:flex shrink-0 w-7 h-7 items-center justify-center rounded-full text-uni-muted opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-black/5 transition-opacity"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.6" />
+                <circle cx="12" cy="12" r="1.6" />
+                <circle cx="19" cy="12" r="1.6" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         <div
           className={`mt-0.5 flex items-center gap-2 ${isMine ? "flex-row-reverse" : ""}`}
