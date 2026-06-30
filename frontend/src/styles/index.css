@@ -121,11 +121,14 @@ select:focus-visible {
 }
 
 /* Mobile: keep form controls at >=16px so iOS Safari doesn't auto-zoom the
-   viewport when an input/textarea/select is focused. */
+   viewport on focus (and then leave it zoomed-in / misaligned after the keyboard
+   closes). `!important` is REQUIRED: Tailwind font-size utilities like `text-sm`
+   (14px, on the chat composer) are class selectors that out-specify these bare
+   element rules, so without it the textarea stays 14px and iOS still zooms. */
 @media (max-width: 640px) {
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
