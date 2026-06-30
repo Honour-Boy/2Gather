@@ -70,7 +70,7 @@ export default function Journal() {
           </p>
 
           {/* Reflection composer */}
-          <div className="mt-6 rounded-2xl border border-uni-border bg-uni-surface p-4 shadow-card">
+          <div className="mt-6 rounded-2xl border border-uni-border bg-uni-surface p-4 shadow-card focus-within:border-uni-gold/50 focus-within:shadow-[0_0_0_3px_rgba(221,162,58,0.15)] transition-all">
             <label htmlFor="journal-body" className="sr-only">
               New reflection
             </label>
