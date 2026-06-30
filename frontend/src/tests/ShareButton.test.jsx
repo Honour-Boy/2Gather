@@ -52,3 +52,60 @@ test("opens the picker and forwards the text + kind to the chosen chats", async 
     kind: "prayer",
   });
 });
+
+test("with a note, no prompt path is unchanged — but the prompt appears", () => {
+  render(
+    <ShareButton
+      text="A short prayer."
+      kind="prayer"
+      currentUser={{ id: "me" }}
+      note="This steadied me before the interview."
+    />
+  );
+  fireEvent.click(screen.getByLabelText("Send to a chat"));
+  // The confirm modal intercepts before the picker shows.
+  expect(screen.getByText("Include your reflection note?")).toBeInTheDocument();
+  expect(screen.queryByText("mock-send")).not.toBeInTheDocument();
+});
+
+test("choosing 'Yes' appends the reflection note to the sent text", async () => {
+  render(
+    <ShareButton
+      text="A short prayer."
+      kind="prayer"
+      currentUser={{ id: "me" }}
+      note="This steadied me."
+    />
+  );
+  fireEvent.click(screen.getByLabelText("Send to a chat"));
+  fireEvent.click(screen.getByText("Yes, include it"));
+  fireEvent.click(await screen.findByText("mock-send"));
+
+  expect(forwardChatMessage).toHaveBeenCalledWith({
+    chatIds: ["c1", "c2"],
+    currentUser: { id: "me" },
+    text: "A short prayer.\n\nMy reflection: This steadied me.",
+    kind: "prayer",
+  });
+});
+
+test("choosing 'No' sends just the entry, stripping the note", async () => {
+  render(
+    <ShareButton
+      text="A short prayer."
+      kind="prayer"
+      currentUser={{ id: "me" }}
+      note="This steadied me."
+    />
+  );
+  fireEvent.click(screen.getByLabelText("Send to a chat"));
+  fireEvent.click(screen.getByText("No, just the entry"));
+  fireEvent.click(await screen.findByText("mock-send"));
+
+  expect(forwardChatMessage).toHaveBeenCalledWith({
+    chatIds: ["c1", "c2"],
+    currentUser: { id: "me" },
+    text: "A short prayer.",
+    kind: "prayer",
+  });
+});
