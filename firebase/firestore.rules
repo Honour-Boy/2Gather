@@ -27,12 +27,21 @@ service cloud.firestore {
     }
 
     // User profiles: readable by any signed-in user (needed for search,
-    // suggestions, and showing a chat partner's name/language). Writable only
-    // by the owner. No deletes from the client.
+    // suggestions, and showing a chat partner's name/avatar). Writable only by
+    // the owner. No deletes from the client. NOTE: Firestore read rules are
+    // all-or-nothing per document, so anything readable here is readable by every
+    // signed-in user — keep PII (dob/gender) OUT of this doc, in the owner-only
+    // `private` subcollection below (see frontend/src/services/profile.js).
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && request.auth.uid == userId;
       allow delete: if false;
+
+      // Owner-only private profile fields (PII: dob, gender). No other user can
+      // read these — closing the cross-user PII-enumeration exposure.
+      match /private/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
 
       // Private per-user journal (Phase 4): reflections/prayers/gratitude tagged
       // by Mode. Owner-only — no one else can read or write another's journal.
@@ -82,14 +91,20 @@ service cloud.firestore {
       // hard-deleting, so the other participant sees "this message was deleted").
       // `senderId` and `createdAt` are pinned, so ownership and ordering can't be
       // forged, and only the original sender can update. Hard deletes stay off.
+      // `text` is bounded (string, ≤ 5000 chars) so a client can't write an
+      // oversized/abusive document (Firestore's own per-doc ceiling is 1 MiB).
       match /messages/{messageId} {
         allow read: if isChatParticipant(chatId);
         allow create: if isChatParticipant(chatId)
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 5000;
         allow update: if isChatParticipant(chatId)
           && resource.data.senderId == request.auth.uid
           && request.resource.data.senderId == resource.data.senderId
-          && request.resource.data.createdAt == resource.data.createdAt;
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 5000;
         allow delete: if false;
       }
     }

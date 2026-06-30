@@ -51,13 +51,27 @@ h1 {
 
 /* Visible keyboard-focus indicator for every interactive element. :focus-visible
    only matches keyboard/AT navigation, so mouse clicks stay ring-free while
-   keyboard users always get a clear brand-lime outline (meets the non-text
-   contrast requirement against the dark canvas). Layered on top of any
-   component-level focus styling. */
+   keyboard users always get a clear brand-gold outline (meets the non-text
+   contrast requirement). Layered on top of any component-level focus styling. */
 :focus-visible {
   outline: 2px solid #dda23a; /* uni-gold */
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* …but NOT on raw form fields. Text inputs, textareas, and selects sit inside a
+   styled wrapper (which carries the border-radius + border) or are themselves the
+   bordered control — they show focus via the wrapper's `focus-within` ring or
+   their own `focus:` border. A separate 4px-radius outline on the inner field
+   draws a mismatched rectangle that doesn't follow the element's shape, so we
+   clear it here and let the parent/element border own the focus state. */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: none;
 }
 
 /* Hide scrollbars but keep scrollability */

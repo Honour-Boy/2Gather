@@ -111,39 +111,11 @@ function searchVerses(q) {
   );
 }
 
-// --- Express handlers ---
-
-// GET /api/verses?theme=courage
-function versesHandler(req, res) {
-  const { theme } = req.query;
-  if (theme && !THEMES.includes(theme)) {
-    return res.status(400).json({ error: "unknown theme", themes: THEMES });
-  }
-  const verses = theme ? getVersesByTheme(theme) : VERSES;
-  res.set("Cache-Control", "public, max-age=86400");
-  return res.json({ translation: TRANSLATION, themes: THEME_LABELS, count: verses.length, verses });
-}
-
-// GET /api/verses/daily?theme=rest&date=YYYY-MM-DD
-function dailyVerseHandler(req, res) {
-  const { theme, date } = req.query;
-  if (theme && !THEMES.includes(theme)) {
-    return res.status(400).json({ error: "unknown theme", themes: THEMES });
-  }
-  const verse = getDailyVerse(date, theme);
-  res.set("Cache-Control", "public, max-age=3600");
-  return res.json({ translation: TRANSLATION, theme: theme || null, verse });
-}
-
-// GET /api/verses/search?q=peace
-function searchVersesHandler(req, res) {
-  const q = req.query.q;
-  if (!q || !String(q).trim()) {
-    return res.status(400).json({ error: "query parameter 'q' is required" });
-  }
-  const verses = searchVerses(q);
-  return res.json({ translation: TRANSLATION, query: String(q).trim(), count: verses.length, verses });
-}
+// NOTE: the Express handlers (GET /api/verses, /daily, /search) live in
+// curatedVerses.js now — they were reworked to serve AI-curated, whole-Bible
+// content (Phase 9) and wired into server.js from there. This module is the
+// curated seed corpus + pure helpers those handlers (and the recommender) build
+// on. The old seed-only handlers that used to live here were removed as dead code.
 
 module.exports = {
   TRANSLATION,
@@ -153,7 +125,4 @@ module.exports = {
   getVersesByTheme,
   getDailyVerse,
   searchVerses,
-  versesHandler,
-  dailyVerseHandler,
-  searchVersesHandler,
 };

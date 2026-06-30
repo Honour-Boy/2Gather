@@ -21,6 +21,7 @@ import { format } from "timeago.js";
 import notify from "@/lib/toast";
 import Toaster from "@/components/ui/Toaster";
 import Avatar from "@/components/ui/Avatar";
+import { displayName } from "@/lib/displayName";
 
 const ChatList = () => {
   const [chats, setChats] = useState([]);
@@ -203,9 +204,13 @@ const ChatList = () => {
     inviteHandle
   )}`;
 
-  const filteredChats = chats.filter((c) =>
-    c.user?.username?.toLowerCase().includes(input.toLowerCase())
-  );
+  const filteredChats = chats.filter((c) => {
+    const q = input.toLowerCase();
+    return (
+      displayName(c.user, "").toLowerCase().includes(q) ||
+      (c.user?.username || "").toLowerCase().includes(q)
+    );
+  });
 
   const truncateMessage = (message, wordLimit = 4) => {
     const words = (message || "").split(" ");
@@ -291,7 +296,7 @@ const ChatList = () => {
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               <div className="flex justify-between items-center gap-2">
                 <span className="font-medium text-left text-uni-text text-sm truncate">
-                  {chat.user?.username}
+                  {displayName(chat.user)}
                 </span>
                 <span className="text-[10px] text-uni-muted shrink-0">
                   {chat.lastUpdated?.toDate ? format(chat.lastUpdated.toDate()) : ""}
